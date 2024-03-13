@@ -4,7 +4,6 @@ import (
 	"autflow_back/server"
 	"autflow_back/src/config"
 	"autflow_back/utils"
-	"autflow_back/utils/adapters"
 	"context"
 	"log"
 	"os"
@@ -65,7 +64,7 @@ func main() {
 	logger.Info("Connected to MongoDB!")
 
 	// Redis
-	redisClient := adapters.CreateRedisClient(ctx, adapters.RedisConfig{
+	/*redisClient := adapters.CreateRedisClient(ctx, adapters.RedisConfig{
 		DB:  0,
 		URL: viper.GetString("REDIS_URL"),
 	})
@@ -77,12 +76,12 @@ func main() {
 		logger.Panicf("Error pinging redis client: %s", err)
 	}
 
-	logger.Info("Connected to Redis!")
+	logger.Info("Connected to Redis!")*/
 
 	// echo
 	e := echo.New()
 
-	app := server.NewServer(mongoClient, redisClient, logger, e)
+	app := server.NewServer(mongoClient, logger, e)
 	err = app.Start()
 	if err != nil {
 		logger.Panicf("Error starting server: %s", err)

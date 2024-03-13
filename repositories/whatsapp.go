@@ -13,7 +13,6 @@ import (
 	"os"
 
 	"github.com/go-resty/resty/v2"
-	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 )
 
@@ -23,16 +22,16 @@ type RespostaMedia struct {
 
 type whatsappClient struct {
 	httpClient *resty.Client
-	cache      *redis.Client
+	//cache      *redis.Client
 }
 
-func NewWhatsappRepository(cache *redis.Client) interfaces.WhatsappRepository {
+func NewWhatsappRepository() interfaces.WhatsappRepository {
 	client := resty.New().
 		SetBaseURL(viper.GetString("WP_URL")).
 		SetHeader("Content-Type", "application/json")
 	return &whatsappClient{
 		httpClient: client,
-		cache:      cache,
+		//cache:      cache,
 	}
 }
 

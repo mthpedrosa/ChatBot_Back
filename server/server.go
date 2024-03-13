@@ -21,12 +21,12 @@ type Server struct {
 	logger      utils.Logger
 }
 
-func NewServer(mongoClient *mongo.Client, redis *redis.Client, logger utils.Logger, e *echo.Echo) *Server {
+func NewServer(mongoClient *mongo.Client, logger utils.Logger, e *echo.Echo) *Server {
 	return &Server{
 		e:           e,
 		mongoClient: mongoClient,
-		redis:       redis,
-		logger:      logger,
+		//redis:       redis,
+		logger: logger,
 	}
 }
 
@@ -38,12 +38,12 @@ func (s *Server) Start() error {
 	sessionRepository := repositories.NewSessionsRepository(s.mongoClient)
 	userRepository := repositories.NewUsersRepository(s.mongoClient)
 	workflowRepository := repositories.NewWorkflowsRepository(s.mongoClient)
-	guanabaraRepository := repositories.NewGuanabaraRepository(s.redis)
-	openaiRepository := repositories.NewOpenAiRepository(s.redis)
-	whatsappRepository := repositories.NewWhatsappRepository(s.redis)
+	//guanabaraRepository := repositories.NewGuanabaraRepository(s.redis)
+	openaiRepository := repositories.NewOpenAiRepository()
+	whatsappRepository := repositories.NewWhatsappRepository()
 
 	// Services
-	workflowService := services.NewWorkflow(workflowRepository, metaRepository, customerRepository, sessionRepository, conversationsRepository, s.logger, guanabaraRepository, openaiRepository, whatsappRepository)
+	workflowService := services.NewWorkflow(workflowRepository, metaRepository, customerRepository, sessionRepository, conversationsRepository, s.logger, openaiRepository, whatsappRepository)
 	accountMetaService := services.NewMeta(metaRepository, s.logger)
 	conversationService := services.NewConversation(conversationsRepository, s.logger)
 	customerService := services.NewCustomer(workflowRepository, customerRepository, s.logger)

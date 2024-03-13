@@ -16,16 +16,15 @@ import (
 	"time"
 
 	"github.com/go-resty/resty/v2"
-	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 )
 
 type openaiClient struct {
 	httpClient *resty.Client
-	cache      *redis.Client
+	//cache      *redis.Client
 }
 
-func NewOpenAiRepository(cache *redis.Client) interfaces.OpenAIClientRepository {
+func NewOpenAiRepository() interfaces.OpenAIClientRepository {
 	client := resty.New().
 		SetBaseURL(viper.GetString("GPT_URL")).
 		SetHeader("Content-Type", "application/json").
@@ -33,7 +32,7 @@ func NewOpenAiRepository(cache *redis.Client) interfaces.OpenAIClientRepository 
 
 	return &openaiClient{
 		httpClient: client,
-		cache:      cache,
+		//cache:      cache,
 	}
 }
 

@@ -23,7 +23,6 @@ type Workflow struct {
 	sessionRepository       *repositories.Session
 	conversarionsRepository *repositories.Conversations
 	logger                  utils.Logger
-	guanabaraRepository     interfaces.GuanabaraClientRepository
 	openaiRepository        interfaces.OpenAIClientRepository
 	whatsappRepository      interfaces.WhatsappRepository
 }
@@ -33,7 +32,7 @@ func NewWorkflow(workflow *repositories.Workflows,
 	customer *repositories.Customers,
 	session *repositories.Session,
 	conversarions *repositories.Conversations,
-	logger utils.Logger, guanabara interfaces.GuanabaraClientRepository, openai interfaces.OpenAIClientRepository, whatsapp interfaces.WhatsappRepository) *Workflow {
+	logger utils.Logger, openai interfaces.OpenAIClientRepository, whatsapp interfaces.WhatsappRepository) *Workflow {
 	return &Workflow{
 		workflowRepository:      workflow,
 		metaRepository:          meta,
@@ -41,9 +40,9 @@ func NewWorkflow(workflow *repositories.Workflows,
 		customerRepository:      customer,
 		sessionRepository:       session,
 		conversarionsRepository: conversarions,
-		guanabaraRepository:     guanabara,
-		openaiRepository:        openai,
-		whatsappRepository:      whatsapp,
+		//guanabaraRepository:     guanabara,
+		openaiRepository:   openai,
+		whatsappRepository: whatsapp,
 	}
 }
 
@@ -231,7 +230,7 @@ func (r *Workflow) RunWorkflow(ctx context.Context, payload models.WebhookPayloa
 		}
 
 		var arguments = `{"first_message":false}`
-		err = r.sendMenu(flowData, arguments)
+		err = r.SendMenu(flowData, arguments)
 		return nil
 	}
 
@@ -252,12 +251,12 @@ func (r *Workflow) RunWorkflow(ctx context.Context, payload models.WebhookPayloa
 	}
 
 	// Identify whether the customer is in the sales stage
-	if step == "sale" {
+	/*if step == "sale" {
 		err = r.FlowSale(flowData, "")
 		if err != nil {
 			_ = r.whatsappRepository.SimpleMessage(ctx, err.Error(), customer, metaTokens)
 		}
-	}
+	}*/
 
 	return nil
 }
@@ -453,7 +452,7 @@ func (r *Workflow) gpt_assistant(flowData dto.FlowData) (error, models.ThreadIds
 
 				switch call.Function.Name {
 				case "get_schedules":
-					err = r.FlowSale(flowData, call.Function.Arguments)
+					//err = r.FlowSale(flowData, call.Function.Arguments)
 					if err != nil {
 						return err, models.ThreadIds{}
 					}
@@ -492,7 +491,7 @@ func (r *Workflow) gpt_assistant(flowData dto.FlowData) (error, models.ThreadIds
 					break
 
 				case "send_menu":
-					err = r.sendMenu(flowData, call.Function.Arguments)
+					err = r.SendMenu(flowData, call.Function.Arguments)
 					if err != nil {
 						return err, models.ThreadIds{}
 					}
@@ -582,4 +581,23 @@ func (r *Workflow) updateSessionField(ctx context.Context, sessionId string, nam
 	}
 
 	return r.sessionRepository.UpdateSessionField(ctx, sessionId, field)
+}
+
+// Send message for customer with menu
+func (r *Workflow) SendMenu(flowData dto.FlowData, arguments string) error {
+
+	var nodeMenu models.Node
+	var messageStart = "Oi! Tudo bem? \n \nEu sou a Ana, a assistente virtual do Grupo Guanabara! Tô aqui pra te ajudar a viver experiências incríveis de viagem. 🤗 \n\n"
+	var messageMenu = "Sobre o que vamos falar hoje? *Você quer conferir ou comprar bilhetes de viagem? Já comprou e precisa de ajuda? Ou quer saber mais sobre algum assunto?* É só me contar!"
+	var finalMessage string
+
+	finalMessage = messageStart + messageMenu
+
+	button1 := models.Button{ID: "pesquisar_passagem", Title: "COMPRAR PASSAGEM", NextNode: "node1"}
+	button2 := models.Button{ID: "meus_bilhetes", Title: "MEUS BILHETES", NextNode: "node2"}
+	button3 := models.Button{ID: "outros_assuntos", Title: "OUTROS ASSUNTOS", NextNode: "node3"}
+	nodeMenu.Parameters.Buttons = []models.Button{button1, button2, button3}
+
+	r.whatsappRepository.InteractiveMessage(flowData.Ctx, finalMessage, []models.Button{button1, button2, button3}, flowData.Customer, flowData.MetaTokens)
+	return nil
 }
