@@ -3,6 +3,7 @@ package repositories
 import (
 	"autflow_back/interfaces"
 	"autflow_back/models"
+	"autflow_back/models/dto"
 	"autflow_back/src/config"
 	"bytes"
 	"context"
@@ -459,4 +460,175 @@ func (o *openaiClient) CancelRun(ctx context.Context, threadID, runID string) (s
 
 	fmt.Println("Requisição POST bem-sucedida")
 	return "", nil
+}
+
+///// new functions
+
+// CreateAssistant sends a POST request to the OpenAI API to create a new assistant.
+func (o *openaiClient) CreateAssistant(ctx context.Context, dto dto.CreateAssistantDTO, model string, tools []models.Tool) (*models.Assistant, error) {
+	body := map[string]interface{}{
+		"instructions": dto.Instructions,
+		"name":         dto.Name,
+		"tools":        tools,
+		"model":        model,
+	}
+
+	res, err := o.httpClient.R().
+		SetContext(ctx).
+		SetBody(body).
+		Post("https://api.openai.com/v1/assistants")
+
+	if err != nil {
+		return nil, fmt.Errorf("error sending create request: %v", err)
+	}
+
+	if res.Error() != nil {
+		return nil, fmt.Errorf("error in response: %v", res.Error())
+	}
+
+	// Check the response status
+	if res.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("unexpected response status: %s", res.Status())
+	}
+
+	var assistant models.Assistant
+	err = json.Unmarshal(res.Body(), &assistant)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshalling response: %v", err)
+	}
+
+	return &assistant, nil
+}
+
+// ListAssistants sends a GET request to the OpenAI API to retrieve a list of assistants.
+func (o *openaiClient) ListAssistants(ctx context.Context, order string, limit int) ([]models.Assistant, error) {
+	res, err := o.httpClient.R().
+		SetContext(ctx).
+		SetQueryParam("order", order).
+		SetQueryParam("limit", fmt.Sprintf("%d", limit)).
+		Get("https://api.openai.com/v1/assistants")
+
+	if err != nil {
+		return nil, fmt.Errorf("error sending get request: %v", err)
+	}
+
+	if res.Error() != nil {
+		return nil, fmt.Errorf("error in response: %v", res.Error())
+	}
+
+	// Check the response status
+	if res.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("unexpected response status: %s", res.Status())
+	}
+
+	var assistantsResponse struct {
+		Data []models.Assistant `json:"data"`
+	}
+	err = json.Unmarshal(res.Body(), &assistantsResponse)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshalling response: %v", err)
+	}
+
+	return assistantsResponse.Data, nil
+}
+
+// GetAssistant sends a GET request to the OpenAI API to retrieve an assistant's details.
+func (o *openaiClient) GetAssistant(ctx context.Context, assistantID string) (*models.Assistant, error) {
+	res, err := o.httpClient.R().
+		SetContext(ctx).
+		Get("https://api.openai.com/v1/assistants/" + assistantID)
+
+	if err != nil {
+		return nil, fmt.Errorf("error sending get request: %v", err)
+	}
+
+	if res.Error() != nil {
+		return nil, fmt.Errorf("error in response: %v", res.Error())
+	}
+
+	// Check the response status
+	if res.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("unexpected response status: %s", res.Status())
+	}
+
+	var assistant models.Assistant
+	err = json.Unmarshal(res.Body(), &assistant)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshalling response: %v", err)
+	}
+
+	return &assistant, nil
+}
+
+// UpdateAssistant sends a PUT request to the OpenAI API to update an assistant.
+func (o *openaiClient) UpdateAssistant(ctx context.Context, assistantID, instructions, model string, tools []map[string]string) (string, error) {
+	body := map[string]interface{}{
+		"instructions": instructions,
+		"tools":        tools,
+		"model":        model,
+	}
+
+	res, err := o.httpClient.R().
+		SetContext(ctx).
+		SetBody(body).
+		Put("https://api.openai.com/v1/assistants/" + assistantID)
+
+	if err != nil {
+		return "", fmt.Errorf("error sending update request: %v", err)
+	}
+
+	if res.Error() != nil {
+		return "", fmt.Errorf("error in response: %v", res.Error())
+	}
+
+	// Check the response status
+	if res.StatusCode() != http.StatusOK {
+		return "", fmt.Errorf("unexpected response status: %s", res.Status())
+	}
+
+	var responseMap map[string]interface{}
+	err = json.Unmarshal(res.Body(), &responseMap)
+	if err != nil {
+		return "", fmt.Errorf("error unmarshalling response: %v", err)
+	}
+
+	id, ok := responseMap["id"].(string)
+	if !ok {
+		return "", fmt.Errorf("ID not found in response")
+	}
+
+	return id, nil
+}
+
+// DeleteAssistant sends a DELETE request to the OpenAI API to delete an assistant.
+func (o *openaiClient) DeleteAssistant(ctx context.Context, assistantID string) (string, error) {
+	res, err := o.httpClient.R().
+		SetContext(ctx).
+		Delete("https://api.openai.com/v1/assistants/" + assistantID)
+
+	if err != nil {
+		return "", fmt.Errorf("error sending delete request: %v", err)
+	}
+
+	if res.Error() != nil {
+		return "", fmt.Errorf("error in response: %v", res.Error())
+	}
+
+	// Check the response status
+	if res.StatusCode() != http.StatusOK {
+		return "", fmt.Errorf("unexpected response status: %s", res.Status())
+	}
+
+	var responseMap map[string]interface{}
+	err = json.Unmarshal(res.Body(), &responseMap)
+	if err != nil {
+		return "", fmt.Errorf("error unmarshalling response: %v", err)
+	}
+
+	id, ok := responseMap["id"].(string)
+	if !ok {
+		return "", fmt.Errorf("ID not found in response")
+	}
+
+	return id, nil
 }

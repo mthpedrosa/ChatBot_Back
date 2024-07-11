@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type PostData struct {
 	ThreadId          string `json:"threadId"`
 	RunId             string `json:"runId"`
@@ -127,4 +129,38 @@ type ThreadIds struct {
 	ThreadId  string
 	RunId     string
 	MessageId string
+}
+
+// Tool represents the structure for the tools field in the JSON.
+type Tool struct {
+	Type string `json:"type"`
+}
+
+// ToolResources represents the structure for the tool_resources field in the JSON.
+type ToolResources struct {
+	VectorStoreIDs []string `json:"vector_store_ids"`
+}
+
+// Assistant represents the structure for the entire JSON.
+type Assistant struct {
+	ID             string                   `json:"id"`
+	Object         string                   `json:"object"`
+	CreatedAt      time.Time                `json:"created_at"`
+	Name           string                   `json:"name"`
+	Description    *string                  `json:"description"`
+	Model          string                   `json:"model"`
+	Instructions   string                   `json:"instructions"`
+	Tools          []Tool                   `json:"tools"`
+	ToolResources  map[string]ToolResources `json:"tool_resources"`
+	Metadata       map[string]interface{}   `json:"metadata"`
+	TopP           float64                  `json:"top_p"`
+	Temperature    float64                  `json:"temperature"`
+	ResponseFormat string                   `json:"response_format"`
+}
+
+// AssistantDeleted represents the structure for the JSON.
+type AssistantDeleted struct {
+	ID      string `json:"id"`
+	Object  string `json:"object"`
+	Deleted bool   `json:"deleted"`
 }
