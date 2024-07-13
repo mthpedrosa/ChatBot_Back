@@ -2,6 +2,7 @@ package interfaces
 
 import (
 	"autflow_back/models"
+	"autflow_back/models/dto"
 	"context"
 )
 
@@ -14,4 +15,5 @@ type OpenAIClientRepository interface {
 	PostToolOutputs(ctx context.Context, threadID, runID, callID string, arrayRespone []models.CallResponse) (string, error)
 	ConvertAudioToText(ctx context.Context, filePath string) (string, error)
 	CancelRun(ctx context.Context, threadID, runID string) (string, error)
+	CreateAssistant(ctx context.Context, dto dto.CreateAssistantDTO, model string) (*models.Assistant, error)
 }

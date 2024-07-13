@@ -1,7 +1,5 @@
 package models
 
-import "time"
-
 type PostData struct {
 	ThreadId          string `json:"threadId"`
 	RunId             string `json:"runId"`
@@ -145,7 +143,7 @@ type ToolResources struct {
 type Assistant struct {
 	ID             string                   `json:"id"`
 	Object         string                   `json:"object"`
-	CreatedAt      time.Time                `json:"created_at"`
+	CreatedAt      int64                    `json:"created_at"`
 	Name           string                   `json:"name"`
 	Description    *string                  `json:"description"`
 	Model          string                   `json:"model"`

@@ -1,0 +1,65 @@
+package controllers
+
+import (
+	"autflow_back/models/dto"
+	"autflow_back/requests"
+	"autflow_back/services"
+	"autflow_back/src/responses"
+	"net/http"
+
+	"github.com/go-playground/validator/v10"
+	"github.com/labstack/echo/v4"
+)
+
+type OpenAi struct {
+	openaiService *services.OpenAi
+}
+
+func NewOpenAiController(openaiService *services.OpenAi) *OpenAi {
+	return &OpenAi{
+		openaiService: openaiService,
+	}
+}
+
+func (o *OpenAi) Insert(c echo.Context) error {
+	// Check request body using Bind
+	createAssistantRequest := new(requests.CreateAssistantRequest)
+
+	if err := c.Bind(createAssistantRequest); err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"message": err.Error(),
+		})
+	}
+
+	if err := validate.Struct(createAssistantRequest); err != nil {
+		validationErrors := err.(validator.ValidationErrors)
+
+		errorsMessages := []string{}
+		for _, err := range validationErrors {
+			errorsMessages = append(errorsMessages, err.Error())
+		}
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"message": "Validation errors",
+			"errors":  errorsMessages,
+		})
+	}
+
+	// ID of the user creating the user
+	// creatorUser, erro := authentication.ExtractIdToken(c.Request())
+	// if erro != nil {
+	// 	return responses.Erro(c, http.StatusBadRequest, erro)
+	// }
+
+	dt := &dto.CreateAssistantDTO{
+		Name:         createAssistantRequest.Name,
+		Instructions: createAssistantRequest.Instructions,
+	}
+
+	// Call the service with the Meta
+	createdID, erro := o.openaiService.Insert(c.Request().Context(), dt, createAssistantRequest.IdCustomer)
+	if erro != nil {
+		return responses.Erro(c, http.StatusInternalServerError, erro)
+	}
+
+	return responses.JSON(c, http.StatusCreated, createdID)
+}

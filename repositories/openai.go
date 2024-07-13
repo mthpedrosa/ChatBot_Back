@@ -29,7 +29,7 @@ func NewOpenAiRepository() interfaces.OpenAIClientRepository {
 	client := resty.New().
 		SetBaseURL(viper.GetString("GPT_URL")).
 		SetHeader("Content-Type", "application/json").
-		SetHeader("Authorization", "Bearer "+viper.GetString("GPT_GUANABARA"))
+		SetHeader("Authorization", "Bearer "+viper.GetString("GPT_APIKEY"))
 
 	return &openaiClient{
 		httpClient: client,
@@ -465,18 +465,21 @@ func (o *openaiClient) CancelRun(ctx context.Context, threadID, runID string) (s
 ///// new functions
 
 // CreateAssistant sends a POST request to the OpenAI API to create a new assistant.
-func (o *openaiClient) CreateAssistant(ctx context.Context, dto dto.CreateAssistantDTO, model string, tools []models.Tool) (*models.Assistant, error) {
+func (o *openaiClient) CreateAssistant(ctx context.Context, dto dto.CreateAssistantDTO, model string) (*models.Assistant, error) {
 	body := map[string]interface{}{
 		"instructions": dto.Instructions,
 		"name":         dto.Name,
-		"tools":        tools,
-		"model":        model,
+		"tools": []map[string]string{
+			{"type": "code_interpreter"},
+		},
+		"model": model,
 	}
 
 	res, err := o.httpClient.R().
 		SetContext(ctx).
 		SetBody(body).
-		Post("https://api.openai.com/v1/assistants")
+		SetHeader("OpenAI-Beta", "assistants=v2").
+		Post("/assistants")
 
 	if err != nil {
 		return nil, fmt.Errorf("error sending create request: %v", err)
@@ -631,4 +634,19 @@ func (o *openaiClient) DeleteAssistant(ctx context.Context, assistantID string) 
 	}
 
 	return id, nil
+}
+
+// UnixTime é um tipo personalizado que envolve time.Time
+type UnixTime struct {
+	time.Time
+}
+
+// UnmarshalJSON converte um timestamp Unix para time.Time
+func (t *UnixTime) UnmarshalJSON(b []byte) error {
+	var ts int64
+	if err := json.Unmarshal(b, &ts); err != nil {
+		return err
+	}
+	t.Time = time.Unix(ts, 0)
+	return nil
 }

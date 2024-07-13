@@ -50,6 +50,7 @@ func (s *Server) Start() error {
 	userService := services.NewUser(userRepository, s.logger)
 	loginService := services.NewLogin(userRepository, s.logger)
 	sessionService := services.NewSession(sessionRepository, s.logger)
+	openaiService := services.NewOpenAi(openaiRepository, s.logger)
 
 	//Controllers
 	metaController := controllers.NewMetaController(accountMetaService)
@@ -60,6 +61,7 @@ func (s *Server) Start() error {
 	loginController := controllers.NewLoginController(loginService)
 	webhookController := controllers.NewWebhookController(workflowService, accountMetaService)
 	sessionController := controllers.NewSessionController(sessionService)
+	openaiController := controllers.NewOpenAiController(openaiService)
 
 	//Start routes
 	routes.RegisterMetaRoutes(s.e, metaController)
@@ -70,6 +72,7 @@ func (s *Server) Start() error {
 	routes.RegisterLoginRoutes(s.e, loginController)
 	routes.RegisterWebhookRoutes(s.e, webhookController)
 	routes.RegisterSessionRoutes(s.e, sessionController)
+	routes.RegisterOpenAiRoutes(s.e, openaiController)
 
 	// Middlewares
 	s.e.Use(middleware.CORS())
