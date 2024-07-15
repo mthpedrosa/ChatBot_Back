@@ -33,3 +33,17 @@ func (o *OpenAi) Insert(ctx context.Context, dt *dto.CreateAssistantDTO, idClien
 
 	return *idCriado, nil
 }
+
+func (o *OpenAi) FindId(ctx context.Context, id string) (models.Assistant, error) {
+
+	assitant, erro := o.openaiRepository.GetAssistant(ctx, id)
+	if erro != nil {
+		return models.Assistant{}, erro
+	}
+
+	return *assitant, nil
+}
+
+func (o *OpenAi) Delete(ctx context.Context, id string) (string, error) {
+	return o.openaiRepository.DeleteAssistant(ctx, id)
+}

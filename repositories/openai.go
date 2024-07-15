@@ -509,7 +509,8 @@ func (o *openaiClient) ListAssistants(ctx context.Context, order string, limit i
 		SetContext(ctx).
 		SetQueryParam("order", order).
 		SetQueryParam("limit", fmt.Sprintf("%d", limit)).
-		Get("https://api.openai.com/v1/assistants")
+		SetHeader("OpenAI-Beta", "assistants=v2").
+		Get("/assistants")
 
 	if err != nil {
 		return nil, fmt.Errorf("error sending get request: %v", err)
@@ -539,7 +540,8 @@ func (o *openaiClient) ListAssistants(ctx context.Context, order string, limit i
 func (o *openaiClient) GetAssistant(ctx context.Context, assistantID string) (*models.Assistant, error) {
 	res, err := o.httpClient.R().
 		SetContext(ctx).
-		Get("https://api.openai.com/v1/assistants/" + assistantID)
+		SetHeader("OpenAI-Beta", "assistants=v2").
+		Get("/assistants/" + assistantID)
 
 	if err != nil {
 		return nil, fmt.Errorf("error sending get request: %v", err)
@@ -607,7 +609,8 @@ func (o *openaiClient) UpdateAssistant(ctx context.Context, assistantID, instruc
 func (o *openaiClient) DeleteAssistant(ctx context.Context, assistantID string) (string, error) {
 	res, err := o.httpClient.R().
 		SetContext(ctx).
-		Delete("https://api.openai.com/v1/assistants/" + assistantID)
+		SetHeader("OpenAI-Beta", "assistants=v2").
+		Delete("/assistants/" + assistantID)
 
 	if err != nil {
 		return "", fmt.Errorf("error sending delete request: %v", err)
@@ -634,19 +637,4 @@ func (o *openaiClient) DeleteAssistant(ctx context.Context, assistantID string) 
 	}
 
 	return id, nil
-}
-
-// UnixTime é um tipo personalizado que envolve time.Time
-type UnixTime struct {
-	time.Time
-}
-
-// UnmarshalJSON converte um timestamp Unix para time.Time
-func (t *UnixTime) UnmarshalJSON(b []byte) error {
-	var ts int64
-	if err := json.Unmarshal(b, &ts); err != nil {
-		return err
-	}
-	t.Time = time.Unix(ts, 0)
-	return nil
 }

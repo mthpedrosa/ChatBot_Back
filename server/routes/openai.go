@@ -9,7 +9,7 @@ import (
 func RegisterOpenAiRoutes(e *echo.Echo, openaiController *controllers.OpenAi) {
 	e.POST("/assistant", openaiController.Insert)
 	// e.GET("/account_meta", metaController.Find)
-	// e.GET("/account_meta/:id", metaController.FindId)
+	e.GET("/assistant/:id", openaiController.FindId)
 	// e.PUT("/account_meta/:id", metaController.Edit)
-	// e.DELETE("/account_meta/:id", metaController.Delete)
+	e.DELETE("/assistant/:id", openaiController.Delete)
 }

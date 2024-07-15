@@ -16,4 +16,6 @@ type OpenAIClientRepository interface {
 	ConvertAudioToText(ctx context.Context, filePath string) (string, error)
 	CancelRun(ctx context.Context, threadID, runID string) (string, error)
 	CreateAssistant(ctx context.Context, dto dto.CreateAssistantDTO, model string) (*models.Assistant, error)
+	GetAssistant(ctx context.Context, assistantID string) (*models.Assistant, error)
+	DeleteAssistant(ctx context.Context, assistantID string) (string, error)
 }

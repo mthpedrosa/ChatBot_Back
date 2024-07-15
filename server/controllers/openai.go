@@ -5,6 +5,7 @@ import (
 	"autflow_back/requests"
 	"autflow_back/services"
 	"autflow_back/src/responses"
+	"errors"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -62,4 +63,36 @@ func (o *OpenAi) Insert(c echo.Context) error {
 	}
 
 	return responses.JSON(c, http.StatusCreated, createdID)
+}
+
+func (o *OpenAi) FindId(c echo.Context) error {
+	// Extract the user ID from the request (e.g., from a parameter in the URL)
+	ID := c.Param("id")
+	if ID == "" {
+		return responses.Erro(c, http.StatusInternalServerError, errors.New("parametro não encontrado"))
+	}
+
+	openai, erro := o.openaiService.FindId(c.Request().Context(), ID)
+	if erro != nil {
+		return responses.Erro(c, http.StatusInternalServerError, erro)
+
+	}
+
+	return responses.JSON(c, http.StatusOK, openai)
+}
+
+func (o *OpenAi) Delete(c echo.Context) error {
+	// Extract the account ID from the request (e.g., from a parameter in the URL)
+	ID := c.Param("id")
+	if ID == "" {
+		return responses.Erro(c, http.StatusInternalServerError, errors.New("parametro não encontrado"))
+	}
+
+	// delete the account
+	retorno, erro := o.openaiService.Delete(c.Request().Context(), ID)
+	if erro != nil {
+		return responses.Erro(c, http.StatusInternalServerError, erro)
+
+	}
+	return responses.JSON(c, http.StatusOK, retorno)
 }
