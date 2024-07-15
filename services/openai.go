@@ -34,6 +34,16 @@ func (o *OpenAi) Insert(ctx context.Context, dt *dto.CreateAssistantDTO, idClien
 	return *idCriado, nil
 }
 
+func (o *OpenAi) Edit(ctx context.Context, dt *dto.CreateAssistantDTO, id string) (string, error) {
+	assistant := dt.ToMeta()
+
+	return o.openaiRepository.UpdateAssistant(ctx, id, "gpt-3.5-turbo-16k", assistant)
+}
+
+func (o *OpenAi) FindAll(ctx context.Context, order string, limit int) ([]models.Assistant, error) {
+	return o.openaiRepository.ListAssistants(ctx, order, limit)
+}
+
 func (o *OpenAi) FindId(ctx context.Context, id string) (models.Assistant, error) {
 
 	assitant, erro := o.openaiRepository.GetAssistant(ctx, id)

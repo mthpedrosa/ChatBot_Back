@@ -18,4 +18,6 @@ type OpenAIClientRepository interface {
 	CreateAssistant(ctx context.Context, dto dto.CreateAssistantDTO, model string) (*models.Assistant, error)
 	GetAssistant(ctx context.Context, assistantID string) (*models.Assistant, error)
 	DeleteAssistant(ctx context.Context, assistantID string) (string, error)
+	ListAssistants(ctx context.Context, order string, limit int) ([]models.Assistant, error)
+	UpdateAssistant(ctx context.Context, assistantID, model string, dt models.Assistant) (string, error)
 }

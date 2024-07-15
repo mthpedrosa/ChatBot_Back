@@ -566,17 +566,20 @@ func (o *openaiClient) GetAssistant(ctx context.Context, assistantID string) (*m
 }
 
 // UpdateAssistant sends a PUT request to the OpenAI API to update an assistant.
-func (o *openaiClient) UpdateAssistant(ctx context.Context, assistantID, instructions, model string, tools []map[string]string) (string, error) {
+func (o *openaiClient) UpdateAssistant(ctx context.Context, assistantID, model string, dt models.Assistant) (string, error) {
 	body := map[string]interface{}{
-		"instructions": instructions,
-		"tools":        tools,
-		"model":        model,
+		"instructions": dt.Instructions,
+		"tools": []map[string]string{
+			{"type": "code_interpreter"},
+		},
+		"model": model,
 	}
 
 	res, err := o.httpClient.R().
 		SetContext(ctx).
 		SetBody(body).
-		Put("https://api.openai.com/v1/assistants/" + assistantID)
+		SetHeader("OpenAI-Beta", "assistants=v2").
+		Post("/assistants/" + assistantID)
 
 	if err != nil {
 		return "", fmt.Errorf("error sending update request: %v", err)
