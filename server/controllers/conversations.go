@@ -50,7 +50,7 @@ func (r *Conversation) Insert(c echo.Context) error {
 	dt := &dto.ConversationCreateDTO{
 		CustomerId:  conversationRequest.CustomerId,
 		Messages:    conversationRequest.Messages,
-		WorkflowID:  conversationRequest.WorkflowID,
+		AssistantId: conversationRequest.AssistantId,
 		OtherFields: conversationRequest.OtherFields,
 	}
 
@@ -85,9 +85,9 @@ func (r *Conversation) Find(c echo.Context) error {
 	conversationsDTO := make([]dto.ConversationListDTO, len(conversations))
 	for i, conversation := range conversations {
 		conversationsDTO[i] = dto.ConversationListDTO{
-			ID:         conversation.ID,
-			CustomerId: conversation.CustomerId,
-			WorkflowID: conversation.WorkflowID,
+			ID:          conversation.ID,
+			CustomerId:  conversation.CustomerId,
+			AssistantId: conversation.AssistantId,
 		}
 	}
 
@@ -111,7 +111,7 @@ func (r *Conversation) FindId(c echo.Context) error {
 		ID:          conversation.ID,
 		CustomerId:  conversation.CustomerId,
 		Messages:    conversation.Messages,
-		WorkflowID:  conversation.WorkflowID,
+		AssistantId: conversation.AssistantId,
 		CreatedAt:   conversation.CreatedAt,
 		UpdateAt:    conversation.UpdateAt,
 		OtherFields: conversation.OtherFields,
@@ -152,7 +152,7 @@ func (r *Conversation) Edit(c echo.Context) error {
 	dt := &dto.ConversationCreateDTO{
 		CustomerId:  conversationRequest.CustomerId,
 		Messages:    conversationRequest.Messages,
-		WorkflowID:  conversationRequest.WorkflowID,
+		AssistantId: conversationRequest.AssistantId,
 		OtherFields: conversationRequest.OtherFields,
 	}
 

@@ -43,7 +43,8 @@ func (s *Server) Start() error {
 	whatsappRepository := repositories.NewWhatsappRepository()
 
 	// Services
-	workflowService := services.NewWorkflow(workflowRepository, metaRepository, customerRepository, sessionRepository, conversationsRepository, s.logger, openaiRepository, whatsappRepository)
+	//workflowService := services.NewWorkflow(workflowRepository, metaRepository, customerRepository, sessionRepository, conversationsRepository, s.logger, openaiRepository, whatsappRepository)
+	messageHandlerService := services.NewMessageHandler(metaRepository, customerRepository, sessionRepository, conversationsRepository, s.logger, openaiRepository, whatsappRepository)
 	accountMetaService := services.NewMeta(metaRepository, s.logger)
 	conversationService := services.NewConversation(conversationsRepository, s.logger)
 	customerService := services.NewCustomer(workflowRepository, customerRepository, s.logger)
@@ -55,18 +56,18 @@ func (s *Server) Start() error {
 	//Controllers
 	metaController := controllers.NewMetaController(accountMetaService)
 	conversationsController := controllers.NewConversationController(conversationService)
-	workflowController := controllers.NewWorkflowsController(workflowService)
+	//workflowController := controllers.NewWorkflowsController(workflowService)
 	customerController := controllers.NewCustomerController(customerService)
 	userController := controllers.NewUserController(userService)
 	loginController := controllers.NewLoginController(loginService)
-	webhookController := controllers.NewWebhookController(workflowService, accountMetaService)
+	webhookController := controllers.NewWebhookController(messageHandlerService, accountMetaService)
 	sessionController := controllers.NewSessionController(sessionService)
 	openaiController := controllers.NewOpenAiController(openaiService)
 
 	//Start routes
 	routes.RegisterMetaRoutes(s.e, metaController)
 	routes.RegisterConversationsRoutes(s.e, conversationsController)
-	routes.RegisterWorkflowsRoutes(s.e, workflowController)
+	//routes.RegisterWorkflowsRoutes(s.e, workflowController)
 	routes.RegisterCustomerRoutes(s.e, customerController)
 	routes.RegisterUsersRoutes(s.e, userController)
 	routes.RegisterLoginRoutes(s.e, loginController)

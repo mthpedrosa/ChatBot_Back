@@ -51,7 +51,7 @@ func (w *whatsappClient) InteractiveMessage(ctx context.Context, text string, bu
 
 	res, err := w.httpClient.R().
 		SetContext(ctx).
-		SetHeader("Authorization", "Bearer "+meta.Token).
+		SetHeader("Authorization", "Bearer "+viper.GetString("WP_TOKEN")).
 		SetBody(map[string]interface{}{
 			"recipient_type": "individual",
 			"to":             customer.WhatsAppID,
@@ -90,7 +90,7 @@ func (w *whatsappClient) InteractiveMessage(ctx context.Context, text string, bu
 func (w *whatsappClient) InteractiveMessageList(ctx context.Context, customer models.Customer, meta models.MetaIds, bodyText string, rows []models.Row) error {
 	res, err := w.httpClient.R().
 		SetContext(ctx).
-		SetHeader("Authorization", "Bearer "+meta.Token).
+		SetHeader("Authorization", "Bearer "+viper.GetString("WP_TOKEN")).
 		SetBody(map[string]interface{}{
 			"messaging_product": "whatsapp",
 			"recipient_type":    "individual",
@@ -140,7 +140,7 @@ func (w *whatsappClient) InteractiveMessageList(ctx context.Context, customer mo
 func (w *whatsappClient) SimpleMessage(ctx context.Context, messageSend string, customer models.Customer, meta models.MetaIds) error {
 	res, err := w.httpClient.R().
 		SetContext(ctx).
-		SetHeader("Authorization", "Bearer "+meta.Token).
+		SetHeader("Authorization", "Bearer "+viper.GetString("WP_TOKEN")).
 		SetBody(map[string]interface{}{
 			"messaging_product": "whatsapp",
 			"to":                customer.WhatsAppID,
@@ -242,10 +242,10 @@ func (w *whatsappClient) InteractiveListMessage(ctx context.Context, customer mo
 	return nil
 }
 
-func (w *whatsappClient) GetUrlMedia(ctx context.Context, mediaID string, accessToken string) (string, error) {
+func (w *whatsappClient) GetUrlMedia(ctx context.Context, mediaID string) (string, error) {
 	res, err := w.httpClient.R().
 		SetContext(ctx).
-		SetHeader("Authorization", "Bearer "+accessToken).
+		SetHeader("Authorization", "Bearer "+viper.GetString("WP_TOKEN")).
 		Get(mediaID)
 
 	if err != nil {
@@ -278,15 +278,15 @@ func (w *whatsappClient) GetUrlMedia(ctx context.Context, mediaID string, access
 	return url, nil
 }
 
-func (w *whatsappClient) DownloadMedia(ctx context.Context, url, accessToken string, name string) (string, error) {
+func (w *whatsappClient) DownloadMedia(ctx context.Context, url, name string) (string, error) {
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", err
 	}
 
-	if accessToken != "" {
-		req.Header.Set("Authorization", "Bearer "+accessToken)
+	if viper.GetString("WP_URL") != "" {
+		req.Header.Set("Authorization", "Bearer "+viper.GetString("WP_TOKEN"))
 	}
 
 	client := &http.Client{}

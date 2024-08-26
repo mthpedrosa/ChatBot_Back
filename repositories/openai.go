@@ -234,7 +234,7 @@ func GetChatGPTResponse(text string) (string, error) {
 	return content, nil
 }
 
-// / Assistant ///
+///// CONVERSATIONS
 
 // Create a new thread in gpt
 func (o *openaiClient) CreateThread(ctx context.Context) (*models.ThreadResponse, error) {
@@ -305,7 +305,7 @@ func (o *openaiClient) PostMessage(ctx context.Context, threadID, message string
 }
 
 // Run the thread
-func (o *openaiClient) StartThreadRun(ctx context.Context, threadID string) (string, error) {
+func (o *openaiClient) StartThreadRun(ctx context.Context, threadID, assistantID string) (string, error) {
 	// Get the current date and time
 	currentTime := time.Now()
 	currentDay := currentTime.Day()
@@ -317,7 +317,7 @@ func (o *openaiClient) StartThreadRun(ctx context.Context, threadID string) (str
 		SetContext(ctx).
 		SetHeader("OpenAI-Beta", "assistants=v1").
 		SetBody(map[string]interface{}{
-			"assistant_id":            viper.Get("ASSISTANT_ID").(string),
+			"assistant_id":            assistantID,
 			"additional_instructions": fmt.Sprintf("Hoje é dia: %d-%02d-%02d", currentYear, currentMonth, currentDay),
 		}).
 		Post("/threads/" + threadID + "/runs")
@@ -462,7 +462,7 @@ func (o *openaiClient) CancelRun(ctx context.Context, threadID, runID string) (s
 	return "", nil
 }
 
-///// new functions
+///// ASSISTANTS
 
 // CreateAssistant sends a POST request to the OpenAI API to create a new assistant.
 func (o *openaiClient) CreateAssistant(ctx context.Context, dto dto.CreateAssistantDTO, model string) (*models.Assistant, error) {

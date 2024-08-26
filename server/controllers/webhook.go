@@ -18,14 +18,14 @@ import (
 }*/
 
 type Webhook struct {
-	workflowService *services.Workflow
-	metaService     *services.Meta
+	messageHandler *services.MessageHandler
+	metaService    *services.Meta
 }
 
-func NewWebhookController(workflowService *services.Workflow, metaService *services.Meta) *Webhook {
+func NewWebhookController(messageHandler *services.MessageHandler, metaService *services.Meta) *Webhook {
 	return &Webhook{
-		workflowService: workflowService,
-		metaService:     metaService,
+		messageHandler: messageHandler,
+		metaService:    metaService,
 	}
 }
 
@@ -48,18 +48,20 @@ func (r *Webhook) WebhookRun(c echo.Context) error {
 		return nil
 	}
 
+	fmt.Print("ID Meta payload : " + payload.Entry[0].Changes[0].Value.MetaData.PhoneNumberId)
+
 	// Check account_meta
-	meta, erro := r.metaService.Find(c.Request().Context(), "webhook="+webhookId)
+	meta, erro := r.metaService.Find(c.Request().Context(), "phone_id="+payload.Entry[0].Changes[0].Value.MetaData.PhoneNumberId)
 	if erro != nil {
 		return responses.Erro(c, http.StatusInternalServerError, erro)
 	}
 
-	workflow, err := r.workflowService.IdentifyWorkflow(c.Request().Context(), models.WebhookPayload(payload), meta[0])
+	idAssistant, err := r.messageHandler.ValidAssistant(c.Request().Context(), models.WebhookPayload(payload), meta[0])
 	if err != nil {
 		return responses.Erro(c, http.StatusBadRequest, err)
 	}
 
-	err = r.workflowService.RunWorkflow(c.Request().Context(), models.WebhookPayload(payload), meta[0], workflow)
+	err = r.messageHandler.Run(c.Request().Context(), models.WebhookPayload(payload), meta[0], idAssistant)
 	/*if err != nil {
 		return responses.Erro(c, http.StatusBadRequest, err)
 	}*/
