@@ -7,10 +7,8 @@ import (
 	"autflow_back/repositories"
 	"autflow_back/utils"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -86,7 +84,7 @@ func (r *MessageHandler) Run(ctx context.Context, payload models.WebhookPayload,
 	}
 
 	fmt.Println(session)
-	fmt.Println(idConversation)
+	fmt.Println(idConversation) // remmeber
 
 	// identify the type of message received and its content
 	message, err := r.identifyMessage(ctx, payload)
@@ -102,26 +100,28 @@ func (r *MessageHandler) Run(ctx context.Context, payload models.WebhookPayload,
 	//Convert audio for text
 	if message.Type == "audio" {
 		fmt.Println("Entro no audio")
-		responseMedia, err := r.whatsappRepository.GetUrlMedia(ctx, message.Content)
-		if err != nil {
-			return err
-		}
+		// responseMedia, err := r.whatsappRepository.GetUrlMedia(ctx, message.Content)
+		// if err != nil {
+		// 	return err
+		// }
 
-		nameFile, err := r.whatsappRepository.DownloadMedia(ctx, responseMedia, message.Content)
-		if err != nil {
-			return err
-		}
+		// nameFile, err := r.whatsappRepository.DownloadMedia(ctx, responseMedia, message.Content)
+		// if err != nil {
+		// 	return err
+		// }
 
-		messageAudio, err := r.openaiRepository.ConvertAudioToText(ctx, nameFile)
-		if err != nil {
-			return err
-		}
+		// messageAudio, err := r.openaiRepository.ConvertAudioToText(ctx, nameFile)
+		// if err != nil {
+		// 	return err
+		// }
 
-		fmt.Println("Audio trauzido para : " + messageAudio)
-		message.Content = messageAudio
+		// fmt.Println("Audio trauzido para : " + messageAudio)
+		// message.Content = messageAudio
 
-		//remove file
-		err = os.Remove("../temp_files" + nameFile)
+		// //remove file
+		// err = os.Remove("../temp_files" + nameFile)
+		_ = r.whatsappRepository.SimpleMessage(ctx, "Desculpe, no momento não consigo entender audios, consegue escrever para continuarmos o atendimento?", customer, metaTokens)
+		return nil
 	}
 
 	// Check session stage
@@ -141,17 +141,19 @@ func (r *MessageHandler) Run(ctx context.Context, payload models.WebhookPayload,
 
 	// Allow the customer to return to the main menu in chatgpt
 	if message.Content == "v" || message.Content == "V" {
+		fmt.Println("Enviando menu")
 		if err := r.updateSessionField(flowData.Ctx, flowData.Session.ID.Hex(), "current_stage", "string", "assistant"); err != nil {
 			return err
 		}
 
 		var arguments = `{"first_message":false}`
-		err = r.SendMenu(flowData, arguments)
+		err = r.sendMenu(flowData, arguments)
 		return nil
 	}
 
 	// Identifies whether to proceed to the assistant
 	if step == "assistant" || step == "" {
+		fmt.Println("assistsant id :", assitantID)
 		//Send to gpt assistant
 		err, threadsIds := r.gpt_assistant(flowData, assitantID)
 		if err != nil {
@@ -165,15 +167,6 @@ func (r *MessageHandler) Run(ctx context.Context, payload models.WebhookPayload,
 			return err
 		}
 	}
-
-	// Identify whether the customer is in the sales stage
-	/*if step == "sale" {
-		err = r.FlowSale(flowData, "")
-		if err != nil {
-			_ = r.whatsappRepository.SimpleMessage(ctx, err.Error(), customer, metaTokens)
-		}
-	}*/
-
 	return nil
 }
 
@@ -287,6 +280,7 @@ func (r *MessageHandler) getInfoSessions(ctx context.Context, idCustomer, idAssi
 
 // Identifies the type of message received - If it's audio, download it and get treatment
 func (r *MessageHandler) identifyMessage(ctx context.Context, payload models.WebhookPayload) (models.MessagePayload, error) {
+	fmt.Println("Querida cheguei")
 	var messagePayload models.MessagePayload
 	// Determine the message type
 	messageType := payload.Entry[0].Changes[0].Value.Messages[0].Type
@@ -322,11 +316,12 @@ func (r *MessageHandler) updateSessionField(ctx context.Context, sessionId strin
 }
 
 // Send message for customer with menu
-func (r *MessageHandler) SendMenu(flowData dto.FlowData, arguments string) error {
+func (r *MessageHandler) sendMenu(flowData dto.FlowData, arguments string) error {
+	fmt.Println("send menu")
 
 	var nodeMenu models.Node
-	var messageStart = "Oi! Tudo bem? \n \nEu sou a Ana, a assistente virtual do Grupo Guanabara! Tô aqui pra te ajudar a viver experiências incríveis de viagem. 🤗 \n\n"
-	var messageMenu = "Sobre o que vamos falar hoje? *Você quer conferir ou comprar bilhetes de viagem? Já comprou e precisa de ajuda? Ou quer saber mais sobre algum assunto?* É só me contar!"
+	var messageStart = "Oi! Tudo bem? \n \nEu sou a Ana, a assistente virtual do IFSP! Tô aqui pra te ajudar a tirar suas duvidas. 🤗 \n\n"
+	var messageMenu = "Sobre o que vamos falar hoje? *Você quer conferir horarios de aula? Duvidas sobre materias especificas?* É só me contar!"
 	var finalMessage string
 
 	finalMessage = messageStart + messageMenu
@@ -408,84 +403,85 @@ func (r *MessageHandler) gpt_assistant(flowData dto.FlowData, asssitantID string
 		status = threadJson.Status
 		fmt.Println("Status:", status)
 
-		if status == "completed" || status == "cancelled" || status == "failed" {
+		if status == "completed" || status == "cancelled" || status == "failed" || status == "requires_action" {
 			fmt.Println("Status:", threadJson)
 			break
 		}
 
-		if status == "requires_action" {
-			var arrayRespone []models.CallResponse
+		// if status == "requires_action" {
+		// 	var arrayRespone []models.CallResponse
 
-			for _, call := range threadJson.RequiredAction.SubmitToolOutputs.ToolCalls {
-				var format models.CallResponse
-				callID = call.ID
-				fmt.Println("Numero da chamada : " + callID)
+		// 	for _, call := range threadJson.RequiredAction.SubmitToolOutputs.ToolCalls {
+		// 		var format models.CallResponse
+		// 		callID = call.ID
+		// 		fmt.Println("Numero da chamada : " + callID)
 
-				switch call.Function.Name {
-				case "get_schedules":
-					//err = r.FlowSale(flowData, call.Function.Arguments)
-					if err != nil {
-						return err, models.ThreadIds{}
-					}
+		// 		switch call.Function.Name {
+		// 		case "get_schedules":
+		// 			//err = r.FlowSale(flowData, call.Function.Arguments)
+		// 			if err != nil {
+		// 				return err, models.ThreadIds{}
+		// 			}
 
-					format = models.CallResponse{
-						ToolCallID: callID,
-						OutPut:     `{success:"true"}`,
-					}
+		// 			format = models.CallResponse{
+		// 				ToolCallID: callID,
+		// 				OutPut:     `{success:"true"}`,
+		// 			}
 
-					arrayRespone = append(arrayRespone, format)
-					ingoreReturn = true
-				case "save_name":
-					var result map[string]string
+		// 			arrayRespone = append(arrayRespone, format)
+		// 			ingoreReturn = true
+		// 		case "save_name":
+		// 			var result map[string]string
 
-					err = json.Unmarshal([]byte(call.Function.Arguments), &result)
-					if err != nil {
-						format = models.CallResponse{
-							ToolCallID: callID,
-							OutPut:     `{success:"false"}`,
-						}
-					}
+		// 			err = json.Unmarshal([]byte(call.Function.Arguments), &result)
+		// 			if err != nil {
+		// 				format = models.CallResponse{
+		// 					ToolCallID: callID,
+		// 					OutPut:     `{success:"false"}`,
+		// 				}
+		// 			}
 
-					var field models.Fields
-					field.Name = "name_provided"
-					field.Type = "string"
-					field.Value = result["first_name"] + " " + result["last_name"]
-					err = r.customerRepository.UpdateCustomerField(flowData.Ctx, flowData.Session.CustomerID, field)
+		// 			var field models.Fields
+		// 			field.Name = "name_provided"
+		// 			field.Type = "string"
+		// 			field.Value = result["first_name"] + " " + result["last_name"]
+		// 			err = r.customerRepository.UpdateCustomerField(flowData.Ctx, flowData.Session.CustomerID, field)
 
-					format = models.CallResponse{
-						ToolCallID: callID,
-						OutPut:     `{success:"true"}`,
-					}
+		// 			format = models.CallResponse{
+		// 				ToolCallID: callID,
+		// 				OutPut:     `{success:"true"}`,
+		// 			}
 
-					arrayRespone = append(arrayRespone, format)
+		// 			arrayRespone = append(arrayRespone, format)
 
-					break
+		// 			break
 
-				case "send_menu":
-					err = r.SendMenu(flowData, call.Function.Arguments)
-					if err != nil {
-						return err, models.ThreadIds{}
-					}
+		// 		case "send_menu":
+		// 			err = r.SendMenu(flowData, call.Function.Arguments)
+		// 			if err != nil {
+		// 				return err, models.ThreadIds{}
+		// 			}
 
-					format = models.CallResponse{
-						ToolCallID: callID,
-						OutPut:     `{success:"true"}`,
-					}
+		// 			format = models.CallResponse{
+		// 				ToolCallID: callID,
+		// 				OutPut:     `{success:"true"}`,
+		// 			}
 
-					arrayRespone = append(arrayRespone, format)
-					ingoreReturn = true
-				default:
-					return fmt.Errorf("Função nao encontrada"), threadsId
-				}
-			}
+		// 			arrayRespone = append(arrayRespone, format)
+		// 			ingoreReturn = true
+		// 		default:
+		// 			return fmt.Errorf("Função nao encontrada"), threadsId
+		// 		}
+		// 	}
 
-			if len(arrayRespone) > 0 {
-				_, err = r.openaiRepository.PostToolOutputs(flowData.Ctx, threadID, runID, callID, arrayRespone)
-				if err != nil {
-					return err, threadsId
-				}
-			}
-		}
+		// 	if len(arrayRespone) > 0 {
+		// 		_, err = r.openaiRepository.PostToolOutputs(flowData.Ctx, threadID, runID, callID, arrayRespone)
+		// 		if err != nil {
+		// 			return err, threadsId
+		// 		}
+		// 	}
+		// }
+		fmt.Println(callID)
 		time.Sleep(100 * time.Millisecond) // test
 	}
 

@@ -37,6 +37,8 @@ func NewWhatsappRepository() interfaces.WhatsappRepository {
 
 func (w *whatsappClient) InteractiveMessage(ctx context.Context, text string, buttonsArray []models.Button, customer models.Customer, meta models.MetaIds) error {
 	// Building buttons
+	fmt.Println("envia mensagem")
+	fmt.Println(customer, meta, buttonsArray)
 	var buttons []map[string]interface{}
 	for _, button := range buttonsArray {
 		buttonData := map[string]interface{}{
