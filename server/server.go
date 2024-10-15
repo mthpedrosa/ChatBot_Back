@@ -6,12 +6,15 @@ import (
 	"autflow_back/server/routes"
 	"autflow_back/services"
 	"autflow_back/utils"
+	"context"
+	"log"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/redis/go-redis/v9"
-	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/mongo"
+	"golang.ngrok.com/ngrok"
+	"golang.ngrok.com/ngrok/config"
 )
 
 type Server struct {
@@ -40,6 +43,7 @@ func (s *Server) Start() error {
 	workflowRepository := repositories.NewWorkflowsRepository(s.mongoClient)
 	//guanabaraRepository := repositories.NewGuanabaraRepository(s.redis)
 	openaiRepository := repositories.NewOpenAiRepository()
+	openaiMongoRepository := repositories.NewOpenAiMongoRepository(s.mongoClient)
 	whatsappRepository := repositories.NewWhatsappRepository()
 
 	// Services
@@ -51,7 +55,7 @@ func (s *Server) Start() error {
 	userService := services.NewUser(userRepository, s.logger)
 	loginService := services.NewLogin(userRepository, s.logger)
 	sessionService := services.NewSession(sessionRepository, s.logger)
-	openaiService := services.NewOpenAi(openaiRepository, s.logger)
+	openaiService := services.NewOpenAi(openaiRepository, openaiMongoRepository, s.logger)
 
 	//Controllers
 	metaController := controllers.NewMetaController(accountMetaService)
@@ -83,9 +87,25 @@ func (s *Server) Start() error {
 	s.e.Use(middleware.Gzip())
 	s.e.Use(middleware.Secure())
 
-	// Start server
-	err := s.e.Start(":" + viper.GetString("PORT"))
+	// Configuração do Ngrok
+	ctx := context.Background()
+	listener, err := ngrok.Listen(ctx,
+		config.HTTPEndpoint(
+			config.WithDomain("talented-starling-quietly.ngrok-free.app"),
+		),
+		ngrok.WithAuthtokenFromEnv(),
+	)
 	if err != nil {
+		return err
+	}
+
+	// Inicia o servidor Echo usando o listener do Ngrok
+	s.e.Listener = listener
+
+	log.Println("Ngrok tunnel established at:", listener.URL())
+
+	// Agora inicie o servidor Echo usando o listener do Ngrok
+	if err := s.e.StartServer(s.e.Server); err != nil {
 		return err
 	}
 

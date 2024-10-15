@@ -4,24 +4,29 @@ import (
 	"autflow_back/interfaces"
 	"autflow_back/models"
 	"autflow_back/models/dto"
+	"autflow_back/repositories"
+	"fmt"
+
 	"autflow_back/utils"
 	"context"
 )
 
 type OpenAi struct {
 	openaiRepository interfaces.OpenAIClientRepository
+	openaiMongo      *repositories.OpenaiMongo
 	logger           utils.Logger
 }
 
-func NewOpenAi(openai interfaces.OpenAIClientRepository,
+func NewOpenAi(openai interfaces.OpenAIClientRepository, openaiMongo *repositories.OpenaiMongo,
 	logger utils.Logger) *OpenAi {
 	return &OpenAi{
 		logger:           logger,
 		openaiRepository: openai,
+		openaiMongo:      openaiMongo,
 	}
 }
 
-func (o *OpenAi) Insert(ctx context.Context, dt *dto.CreateAssistantDTO, idClient string) (models.Assistant, error) {
+func (o *OpenAi) Insert(ctx context.Context, dt *dto.CreateAssistantDTO, userID string) (models.Assistant, error) {
 	assistant := *dt
 
 	o.logger.Debugf("Create Assistant: %+v", assistant)
@@ -30,6 +35,15 @@ func (o *OpenAi) Insert(ctx context.Context, dt *dto.CreateAssistantDTO, idClien
 	if erro != nil {
 		return models.Assistant{}, erro
 	}
+
+	// add create in local db
+	idCriado.UserID = userID
+	idMongo, erro := o.openaiMongo.Insert(ctx, *idCriado)
+	if erro != nil {
+		return models.Assistant{}, erro
+	}
+
+	fmt.Println("ID MONGO ASSISTANT:", idMongo)
 
 	return *idCriado, nil
 }
@@ -56,4 +70,14 @@ func (o *OpenAi) FindId(ctx context.Context, id string) (models.Assistant, error
 
 func (o *OpenAi) Delete(ctx context.Context, id string) (string, error) {
 	return o.openaiRepository.DeleteAssistant(ctx, id)
+}
+
+// user
+func (o *OpenAi) FindAllUser(ctx context.Context, id string) ([]models.Assistant, error) {
+	assistants, erro := o.openaiMongo.FindAllUser(ctx, id)
+	if erro != nil {
+		return nil, erro
+	}
+
+	return assistants, nil
 }

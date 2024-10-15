@@ -5,6 +5,7 @@ import "autflow_back/models"
 type CreateAssistantDTO struct {
 	Name         string `json:"name,omitempty" bson:"name,omitempty"`
 	Instructions string `json:"instructions,omitempty" bson:"instructions,omitempty"`
+	UserID       string `json:"user_id" bson:"instructions,omitempty"`
 }
 
 func (dto *CreateAssistantDTO) ToMeta() models.Assistant {

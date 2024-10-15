@@ -55,10 +55,11 @@ func (o *OpenAi) Insert(c echo.Context) error {
 	dt := &dto.CreateAssistantDTO{
 		Name:         createAssistantRequest.Name,
 		Instructions: createAssistantRequest.Instructions,
+		UserID:       createAssistantRequest.UserID,
 	}
 
 	// Call the service with the Meta
-	createdID, erro := o.openaiService.Insert(c.Request().Context(), dt, createAssistantRequest.IdCustomer)
+	createdID, erro := o.openaiService.Insert(c.Request().Context(), dt, createAssistantRequest.UserID)
 	if erro != nil {
 		return responses.Erro(c, http.StatusInternalServerError, erro)
 	}
@@ -162,4 +163,21 @@ func (o *OpenAi) Delete(c echo.Context) error {
 
 	}
 	return responses.JSON(c, http.StatusOK, retorno)
+}
+
+func (o *OpenAi) FindAllUser(c echo.Context) error {
+	// Extract the user ID from the request (e.g., from a parameter in the URL)
+	ID := c.Param("id")
+	if ID == "" {
+		return responses.Erro(c, http.StatusInternalServerError, errors.New("parametro não encontrado"))
+	}
+
+	assistants, erro := o.openaiService.FindAllUser(c.Request().Context(), ID)
+	if erro != nil {
+
+		return responses.Erro(c, http.StatusInternalServerError, erro)
+
+	}
+
+	return responses.JSON(c, http.StatusOK, assistants)
 }

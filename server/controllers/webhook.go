@@ -31,6 +31,7 @@ func NewWebhookController(messageHandler *services.MessageHandler, metaService *
 
 func (r *Webhook) WebhookRun(c echo.Context) error {
 	var payload models.WebhookPayload
+	fmt.Println("Start conversation process")
 
 	// Extract the ID from the request
 	webhookId := c.Param("id")
@@ -73,6 +74,7 @@ func (r *Webhook) WebhookRun(c echo.Context) error {
 // Validate meta parameters
 func (r *Webhook) WebhookCheck(c echo.Context) error {
 	verifyToken := c.QueryParam("hub.challenge")
+	fmt.Println("Start webhook validation process:")
 
 	if verifyToken != "" {
 		fmt.Println("Token de verificação encontrado:", verifyToken)

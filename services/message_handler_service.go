@@ -64,7 +64,7 @@ func (r *MessageHandler) Run(ctx context.Context, payload models.WebhookPayload,
 	var idConversation string
 
 	// checking if the client exists, if not it creates
-	customerExist, err, customer, idCustomer := r.customerExist(ctx, payload)
+	customerExist, customer, idCustomer, err := r.customerExist(ctx, payload)
 	if err != nil {
 		return err
 	}
@@ -75,7 +75,7 @@ func (r *MessageHandler) Run(ctx context.Context, payload models.WebhookPayload,
 			return err
 		}
 
-		fmt.Println("Cliente não existia, aqui deve ter sido criado uma conversa e uma sessão")
+		fmt.Println("Client did not exist, a conversation and a session must have been created here.")
 	} else {
 		session, idConversation, err = r.getInfoSessions(ctx, customer.ID.Hex(), assitantID)
 		if err != nil {
@@ -83,11 +83,11 @@ func (r *MessageHandler) Run(ctx context.Context, payload models.WebhookPayload,
 		}
 	}
 
-	fmt.Println(session)
-	fmt.Println(idConversation) // remmeber
+	fmt.Println("Current session ID:", session)
+	fmt.Println("Current conversation ID:", idConversation)
 
 	// identify the type of message received and its content
-	message, err := r.identifyMessage(ctx, payload)
+	message, err := r.identifyMessage(payload)
 	if err != nil {
 		return err
 	}
@@ -96,6 +96,18 @@ func (r *MessageHandler) Run(ctx context.Context, payload models.WebhookPayload,
 		PhoneID:    meta.PhoneNumberId,
 		BusinessId: meta.BusinessId,
 	}
+
+	//Add mensage in conversation
+	var recepido models.Message = models.Message{
+		Content: message.Content,
+		Status: models.MessageStatus{
+			Sent:     true,
+			Received: false,
+		},
+		Sender:    "user",
+		Timestamp: time.Now().Unix(),
+	}
+	r.conversarionsRepository.InsertMessage(ctx, idConversation, recepido)
 
 	//Convert audio for text
 	if message.Type == "audio" {
@@ -120,7 +132,19 @@ func (r *MessageHandler) Run(ctx context.Context, payload models.WebhookPayload,
 
 		// //remove file
 		// err = os.Remove("../temp_files" + nameFile)
-		_ = r.whatsappRepository.SimpleMessage(ctx, "Desculpe, no momento não consigo entender audios, consegue escrever para continuarmos o atendimento?", customer, metaTokens)
+		messageAudido := "Desculpe, no momento não consigo entender audios, consegue escrever para continuarmos o atendimento?"
+		_ = r.whatsappRepository.SimpleMessage(ctx, messageAudido, customer, metaTokens)
+
+		var conv models.Message = models.Message{
+			Content: messageAudido,
+			Status: models.MessageStatus{
+				Sent:     true,
+				Received: false,
+			},
+			Sender:    "gpt",
+			Timestamp: time.Now().Unix(),
+		}
+		r.conversarionsRepository.InsertMessage(ctx, idConversation, conv)
 		return nil
 	}
 
@@ -148,6 +172,9 @@ func (r *MessageHandler) Run(ctx context.Context, payload models.WebhookPayload,
 
 		var arguments = `{"first_message":false}`
 		err = r.sendMenu(flowData, arguments)
+		if err != nil {
+			return err
+		}
 		return nil
 	}
 
@@ -155,7 +182,7 @@ func (r *MessageHandler) Run(ctx context.Context, payload models.WebhookPayload,
 	if step == "assistant" || step == "" {
 		fmt.Println("assistsant id :", assitantID)
 		//Send to gpt assistant
-		err, threadsIds := r.gpt_assistant(flowData, assitantID)
+		threadsIds, err := r.gpt_assistant(ctx, flowData, assitantID, idConversation)
 		if err != nil {
 			//_ = r.whatsappRepository.SimpleMessage(ctx, "Desculpe, parece que tivemos um problema técnico. Vou reiniciar nosso processo para garantir que tudo funcione corretamente. Por favor, me informe novamente, qual informação você está buscando? Se precisar de assistência em algum tópico específico, estou aqui para ajudar!", customer, metaTokens)
 			_ = r.whatsappRepository.SimpleMessage(ctx, err.Error(), customer, metaTokens)
@@ -193,7 +220,7 @@ func (r *MessageHandler) startConversationSession(ctx context.Context, idCustome
 	return idSession, idConversation, nil
 }
 
-func (r *MessageHandler) customerExist(ctx context.Context, payload models.WebhookPayload) (bool, error, models.Customer, string) {
+func (r *MessageHandler) customerExist(ctx context.Context, payload models.WebhookPayload) (bool, models.Customer, string, error) {
 	if len(payload.Entry) > 0 && len(payload.Entry[0].Changes) > 0 && len(payload.Entry[0].Changes[0].Value.Contacts) > 0 {
 		waID := payload.Entry[0].Changes[0].Value.Contacts[0].WAID
 		fmt.Println("WA ID:", waID)
@@ -209,19 +236,19 @@ func (r *MessageHandler) customerExist(ctx context.Context, payload models.Webho
 
 			id, erro := r.customerRepository.Insert(ctx, newCustomer)
 			if erro != nil {
-				return false, erro, models.Customer{}, "" // Error when adding a new customer
+				return false, models.Customer{}, "", erro // Error when adding a new customer
 			}
 
 			newCustomer.ID, err = primitive.ObjectIDFromHex(id)
 			if err != nil {
-				return false, err, models.Customer{}, ""
+				return false, models.Customer{}, "", err
 			}
-			return false, nil, newCustomer, id // Customer created with success
+			return false, newCustomer, id, nil // Customer created with success
 		}
-		return true, nil, customer[0], "" // Customer found
+		return true, customer[0], "", nil // Customer found
 	}
 
-	return false, errors.New("Falha ao ler body da solicitação"), models.Customer{}, "" // Request body reading error
+	return false, models.Customer{}, "", errors.New("Falha ao ler body da solicitação") // Request body reading error
 }
 
 func (r *MessageHandler) getInfoSessions(ctx context.Context, idCustomer, idAssistant string) (models.Session, string, error) {
@@ -279,7 +306,7 @@ func (r *MessageHandler) getInfoSessions(ctx context.Context, idCustomer, idAssi
 }
 
 // Identifies the type of message received - If it's audio, download it and get treatment
-func (r *MessageHandler) identifyMessage(ctx context.Context, payload models.WebhookPayload) (models.MessagePayload, error) {
+func (r *MessageHandler) identifyMessage(payload models.WebhookPayload) (models.MessagePayload, error) {
 	fmt.Println("Querida cheguei")
 	var messagePayload models.MessagePayload
 	// Determine the message type
@@ -335,7 +362,7 @@ func (r *MessageHandler) sendMenu(flowData dto.FlowData, arguments string) error
 	return nil
 }
 
-func (r *MessageHandler) gpt_assistant(flowData dto.FlowData, asssitantID string) (error, models.ThreadIds) {
+func (r *MessageHandler) gpt_assistant(ctx context.Context, flowData dto.FlowData, asssitantID string, idConversation string) (models.ThreadIds, error) {
 	var status string
 	var callID string
 	var response string
@@ -345,14 +372,14 @@ func (r *MessageHandler) gpt_assistant(flowData dto.FlowData, asssitantID string
 	//Checks if the client has a thread created
 	threadID, err := utils.OtherFields(flowData.Customer.OtherFields, "idThread")
 	if err != nil {
-		return err, threadsId
+		return threadsId, err
 	}
 
 	if threadID == "" {
 		fmt.Println("Vamos criar a thread")
 		thread, err := r.openaiRepository.CreateThread(flowData.Ctx)
 		if err != nil {
-			return err, threadsId
+			return threadsId, err
 		}
 
 		fmt.Println("Thread Criada :")
@@ -369,21 +396,21 @@ func (r *MessageHandler) gpt_assistant(flowData dto.FlowData, asssitantID string
 
 		err = r.customerRepository.UpdateCustomerField(flowData.Ctx, flowData.Session.CustomerID, field)
 		if err != nil {
-			return err, threadsId
+			return threadsId, err
 		}
 	}
 
 	// add message to thread
 	messageID, err := r.openaiRepository.PostMessage(flowData.Ctx, threadID, flowData.Message.Content)
 	if err != nil {
-		return err, threadsId
+		return threadsId, err
 	}
 	fmt.Println("Id da mensagem adicionada: " + messageID)
 
 	// Start the thread
 	runID, err := r.openaiRepository.StartThreadRun(flowData.Ctx, threadID, asssitantID)
 	if err != nil {
-		return err, threadsId
+		return threadsId, err
 	}
 	fmt.Println("Id do run: " + runID)
 
@@ -397,7 +424,7 @@ func (r *MessageHandler) gpt_assistant(flowData dto.FlowData, asssitantID string
 		fmt.Println("No for")
 		threadJson, err := r.openaiRepository.GetThreadRunStatus(flowData.Ctx, threadID, runID)
 		if err != nil {
-			return err, threadsId
+			return threadsId, err
 		}
 
 		status = threadJson.Status
@@ -482,18 +509,18 @@ func (r *MessageHandler) gpt_assistant(flowData dto.FlowData, asssitantID string
 		// 	}
 		// }
 		fmt.Println(callID)
-		time.Sleep(100 * time.Millisecond) // test
+		time.Sleep(100 * time.Millisecond)
 	}
 
 	if status != "completed" && !ingoreReturn {
-		return errors.New("error status : " + status), models.ThreadIds{}
+		return models.ThreadIds{}, errors.New("error status : " + status)
 	}
 
 	if !ingoreReturn {
 		// Search chat messages
 		mensagens, err := r.openaiRepository.GetThreadMessages(flowData.Ctx, threadID)
 		if err != nil {
-			return err, threadsId
+			return threadsId, err
 		}
 
 		fmt.Println("Mensagens da busca:")
@@ -507,9 +534,20 @@ func (r *MessageHandler) gpt_assistant(flowData dto.FlowData, asssitantID string
 		// We send the chat response to the customer
 		err = r.whatsappRepository.SimpleMessage(flowData.Ctx, response, flowData.Customer, flowData.MetaTokens)
 		if err != nil {
-			return err, threadsId
+			return threadsId, err
 		}
+
+		var conv models.Message = models.Message{
+			Content: response,
+			Status: models.MessageStatus{
+				Sent:     true,
+				Received: false,
+			},
+			Sender:    "gpt",
+			Timestamp: time.Now().Unix(),
+		}
+		r.conversarionsRepository.InsertMessage(ctx, idConversation, conv)
 	}
 
-	return nil, models.ThreadIds{}
+	return models.ThreadIds{}, nil
 }

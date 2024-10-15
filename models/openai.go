@@ -154,11 +154,18 @@ type Assistant struct {
 	TopP           float64                  `json:"top_p"`
 	Temperature    float64                  `json:"temperature"`
 	ResponseFormat string                   `json:"response_format"`
+	UserID         string                   `json:"user_id" bson:"user_id"`
 }
 
 // AssistantDeleted represents the structure for the JSON.
 type AssistantDeleted struct {
 	ID      string `json:"id"`
+	Object  string `json:"object"`
+	Deleted bool   `json:"deleted"`
+}
+
+type AssistantRepo struct {
+	UserId  string `json:"userid"`
 	Object  string `json:"object"`
 	Deleted bool   `json:"deleted"`
 }

@@ -12,4 +12,5 @@ func RegisterOpenAiRoutes(e *echo.Echo, openaiController *controllers.OpenAi) {
 	e.GET("/assistant/:id", openaiController.FindId)
 	e.PUT("/assistant/:id", openaiController.Edit)
 	e.DELETE("/assistant/:id", openaiController.Delete)
+	e.GET("/assistant_user/:id", openaiController.FindAllUser)
 }
