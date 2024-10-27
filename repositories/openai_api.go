@@ -3,7 +3,6 @@ package repositories
 import (
 	"autflow_back/interfaces"
 	"autflow_back/models"
-	"autflow_back/models/dto"
 	"autflow_back/src/config"
 	"bytes"
 	"context"
@@ -465,7 +464,7 @@ func (o *openaiClient) CancelRun(ctx context.Context, threadID, runID string) (s
 ///// ASSISTANTS
 
 // CreateAssistant sends a POST request to the OpenAI API to create a new assistant.
-func (o *openaiClient) CreateAssistant(ctx context.Context, dto dto.CreateAssistantDTO, model string) (*models.Assistant, error) {
+func (o *openaiClient) CreateAssistant(ctx context.Context, dto models.CreateAssistant, model string) (*models.Assistant, error) {
 	body := map[string]interface{}{
 		"instructions": dto.Instructions,
 		"name":         dto.Name,
@@ -566,7 +565,7 @@ func (o *openaiClient) GetAssistant(ctx context.Context, assistantID string) (*m
 }
 
 // UpdateAssistant sends a PUT request to the OpenAI API to update an assistant.
-func (o *openaiClient) UpdateAssistant(ctx context.Context, assistantID, model string, dt models.Assistant) (string, error) {
+func (o *openaiClient) UpdateAssistant(ctx context.Context, assistantID, model string, dt models.CreateAssistant) (string, error) {
 	body := map[string]interface{}{
 		"instructions": dt.Instructions,
 		"tools": []map[string]string{

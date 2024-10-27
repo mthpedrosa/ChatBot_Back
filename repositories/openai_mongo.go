@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -21,22 +22,13 @@ func NewOpenAiMongoRepository(db *mongo.Client) *OpenaiMongo {
 }
 
 // Insert the Meta Account in the database
-func (o *OpenaiMongo) Insert(ctx context.Context, dto models.Assistant) (string, error) {
+func (o *OpenaiMongo) Insert(ctx context.Context, assistant models.CreateAssistant) (string, error) {
 	collection := o.db.Collection(openaiCollection)
 
-	// Check if the user's email already exists in the database.
-	existingAssistant := &models.Assistant{}
-	filter := bson.M{"id": dto.ID}
-	err := collection.FindOne(ctx, filter).Decode(existingAssistant)
-
-	if err == nil {
-		return "", errors.New("já exsite um assistante cadastrado com esse id")
-	} else if !errors.Is(err, mongo.ErrNoDocuments) {
-		return "", err
-	}
+	assistant.CreatedAt = time.Now().Add(-3 * time.Hour)
 
 	// Insert the account into the collection.
-	result, err := collection.InsertOne(ctx, dto)
+	result, err := collection.InsertOne(ctx, assistant)
 	if err != nil {
 		return "", err
 	}
@@ -50,7 +42,7 @@ func (o *OpenaiMongo) Insert(ctx context.Context, dto models.Assistant) (string,
 	return insertedID.Hex(), nil
 }
 
-func (o *OpenaiMongo) FindAllUser(ctx context.Context, ID string) ([]models.Assistant, error) {
+func (o *OpenaiMongo) FindAllUser(ctx context.Context, ID string) ([]models.CreateAssistant, error) {
 	collection := o.db.Collection(openaiCollection)
 
 	filter := bson.M{"user_id": ID}
@@ -66,9 +58,9 @@ func (o *OpenaiMongo) FindAllUser(ctx context.Context, ID string) ([]models.Assi
 		}
 	}(cursor, ctx)
 
-	var assistants []models.Assistant
+	var assistants []models.CreateAssistant
 	for cursor.Next(ctx) {
-		var assistant models.Assistant
+		var assistant models.CreateAssistant
 		if err := cursor.Decode(&assistant); err != nil {
 			return nil, err
 		}
@@ -81,4 +73,37 @@ func (o *OpenaiMongo) FindAllUser(ctx context.Context, ID string) ([]models.Assi
 	}
 
 	return assistants, nil
+}
+
+func (o *OpenaiMongo) GetAssistant(ctx context.Context, assistantID string) (*models.CreateAssistant, error) {
+	collection := o.db.Collection(openaiCollection)
+
+	objectID, err := primitive.ObjectIDFromHex(assistantID)
+	if err != nil {
+		return nil, err
+	}
+
+	filter := bson.M{"_id": objectID}
+
+	var assistant models.CreateAssistant
+	err = collection.FindOne(ctx, filter, options.FindOne()).Decode(&assistant)
+	if err != nil {
+		return nil, err
+	}
+
+	return &assistant, nil
+}
+
+func (o *OpenaiMongo) Delete(ctx context.Context, ID string) error {
+	collection := o.db.Collection(openaiCollection)
+
+	objectID, err := primitive.ObjectIDFromHex(ID)
+	if err != nil {
+		return err
+	}
+
+	filter := bson.M{"_id": objectID}
+
+	_, err = collection.DeleteOne(ctx, filter)
+	return err
 }

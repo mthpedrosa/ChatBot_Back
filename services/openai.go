@@ -5,7 +5,6 @@ import (
 	"autflow_back/models"
 	"autflow_back/models/dto"
 	"autflow_back/repositories"
-	"fmt"
 
 	"autflow_back/utils"
 	"context"
@@ -26,30 +25,57 @@ func NewOpenAi(openai interfaces.OpenAIClientRepository, openaiMongo *repositori
 	}
 }
 
-func (o *OpenAi) Insert(ctx context.Context, dt *dto.CreateAssistantDTO, userID string) (models.Assistant, error) {
-	assistant := *dt
+func (o *OpenAi) Insert(ctx context.Context, dt *dto.AssistantCreateDTO, userID string) (string, error) {
+	assistant := dt.ToAssistant()
+	// Log inicial da criação do assistente
+	o.logger.Debugf("Create Assistant DTO: %+v", *dt)
 
-	o.logger.Debugf("Create Assistant: %+v", assistant)
+	// Verifica se o assistente é do tipo "sub"
+	if assistant.Type == "sub" {
 
-	idCriado, erro := o.openaiRepository.CreateAssistant(ctx, assistant, "gpt-3.5-turbo-16k")
-	if erro != nil {
-		return models.Assistant{}, erro
+		assistant.Subs = []models.Subs{}
+
+		// Apenas insere no MongoDB sem passar pelo OpenAI
+		o.logger.Debugf("Creating sub-assistant locally in MongoDB")
+
+		assistant.UserID = userID // Atribui o ID do usuário ao DTO
+
+		// Insere o assistente no MongoDB
+		idMongo, err := o.openaiMongo.Insert(ctx, assistant)
+		if err != nil {
+			return "", err
+		}
+
+		o.logger.Infof("Sub-assistant created in MongoDB with ID: %s", idMongo)
+
+		return idMongo, nil
 	}
 
-	// add create in local db
-	idCriado.UserID = userID
-	idMongo, erro := o.openaiMongo.Insert(ctx, *idCriado)
-	if erro != nil {
-		return models.Assistant{}, erro
+	// Caso contrário, cria no OpenAI primeiro
+	o.logger.Debugf("Creating assistant in OpenAI")
+
+	idCriado, err := o.openaiRepository.CreateAssistant(ctx, assistant, "gpt-3.5-turbo-16k")
+	if err != nil {
+		return "", err
 	}
 
-	fmt.Println("ID MONGO ASSISTANT:", idMongo)
+	// Atualiza o DTO com o ID retornado do OpenAI
+	assistant.IdAssistant = idCriado.ID // Atribui o ID retornado pelo OpenAI
+	assistant.UserID = userID           // Atribui o ID do usuário ao DTO
 
-	return *idCriado, nil
+	// Insere no MongoDB o assistente completo
+	idMongo, err := o.openaiMongo.Insert(ctx, assistant)
+	if err != nil {
+		return "", err
+	}
+
+	o.logger.Infof("Assistant created in MongoDB with ID: %s", idMongo)
+
+	return idMongo, nil
 }
 
-func (o *OpenAi) Edit(ctx context.Context, dt *dto.CreateAssistantDTO, id string) (string, error) {
-	assistant := dt.ToMeta()
+func (o *OpenAi) Edit(ctx context.Context, dt *dto.AssistantCreateDTO, id string) (string, error) {
+	assistant := dt.ToAssistant()
 
 	return o.openaiRepository.UpdateAssistant(ctx, id, "gpt-3.5-turbo-16k", assistant)
 }
@@ -58,22 +84,43 @@ func (o *OpenAi) FindAll(ctx context.Context, order string, limit int) ([]models
 	return o.openaiRepository.ListAssistants(ctx, order, limit)
 }
 
-func (o *OpenAi) FindId(ctx context.Context, id string) (models.Assistant, error) {
+func (o *OpenAi) FindId(ctx context.Context, id string) (models.CreateAssistant, error) {
 
-	assitant, erro := o.openaiRepository.GetAssistant(ctx, id)
+	// assitant, erro := o.openaiRepository.GetAssistant(ctx, id)
+	// if erro != nil {
+	// 	return models.Assistant{}, erro
+	// }
+
+	assitant, erro := o.openaiMongo.GetAssistant(ctx, id)
 	if erro != nil {
-		return models.Assistant{}, erro
+		return models.CreateAssistant{}, erro
 	}
 
 	return *assitant, nil
 }
 
 func (o *OpenAi) Delete(ctx context.Context, id string) (string, error) {
-	return o.openaiRepository.DeleteAssistant(ctx, id)
+
+	// Verificamos o tipo do assistante, se for sub sómente deletamos do banco, se for ass deletamos do openAI
+	assitant, erro := o.openaiMongo.GetAssistant(ctx, id)
+	if erro != nil {
+		return "", erro
+	}
+
+	erro = o.openaiMongo.Delete(ctx, assitant.ID.Hex())
+	if erro != nil {
+		return "", erro
+	}
+
+	if assitant.Type == "sub" {
+		return "Deletado com sucesso", nil
+	}
+
+	return o.openaiRepository.DeleteAssistant(ctx, assitant.IdAssistant)
 }
 
 // user
-func (o *OpenAi) FindAllUser(ctx context.Context, id string) ([]models.Assistant, error) {
+func (o *OpenAi) FindAllUser(ctx context.Context, id string) ([]models.CreateAssistant, error) {
 	assistants, erro := o.openaiMongo.FindAllUser(ctx, id)
 	if erro != nil {
 		return nil, erro

@@ -1,5 +1,11 @@
 package models
 
+import (
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
+
 type PostData struct {
 	ThreadId          string `json:"threadId"`
 	RunId             string `json:"runId"`
@@ -168,4 +174,23 @@ type AssistantRepo struct {
 	UserId  string `json:"userid"`
 	Object  string `json:"object"`
 	Deleted bool   `json:"deleted"`
+}
+
+// Model for save in mongoDB
+type CreateAssistant struct {
+	ID           primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Name         string             `json:"name,omitempty" bson:"name,omitempty"`
+	Instructions string             `json:"instructions,omitempty" bson:"instructions,omitempty"`
+	UserID       string             `json:"user_id" bson:"user_id,omitempty"`
+	Collaborator string             `json:"collaborator_id,omitempty" bson:"collaborator_id,omitempty"`
+	Type         string             `json:"type" bson:"type"`
+	IdAssistant  string             `json:"assistant_id,omitempty" bson:"assistant_id,omitempty"`
+	Subs         []Subs             `json:"subs" bson:"subs"`
+	Active       bool               `json:"active" bson:"active"`
+	CreatedAt    time.Time          `json:"created_at" bson:"created_at"`
+	UpdateAt     time.Time          `json:"update_at" bson:"update_at"`
+}
+
+type Subs struct {
+	MongoID string `json:"mongo_id,omitempty" bson:"mongo_id,omitempty"`
 }

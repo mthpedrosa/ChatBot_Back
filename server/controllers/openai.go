@@ -52,10 +52,14 @@ func (o *OpenAi) Insert(c echo.Context) error {
 	// 	return responses.Erro(c, http.StatusBadRequest, erro)
 	// }
 
-	dt := &dto.CreateAssistantDTO{
+	dt := &dto.AssistantCreateDTO{
 		Name:         createAssistantRequest.Name,
 		Instructions: createAssistantRequest.Instructions,
 		UserID:       createAssistantRequest.UserID,
+		Collaborator: createAssistantRequest.Collaborator,
+		Type:         createAssistantRequest.Type,
+		Subs:         createAssistantRequest.Subs,
+		Active:       createAssistantRequest.Active,
 	}
 
 	// Call the service with the Meta
@@ -95,7 +99,7 @@ func (o *OpenAi) Edit(c echo.Context) error {
 		return responses.Erro(c, http.StatusInternalServerError, errors.New("parametro não encontrado"))
 	}
 
-	dt := &dto.CreateAssistantDTO{
+	dt := &dto.AssistantCreateDTO{
 		Name:         createAssistantRequest.Name,
 		Instructions: createAssistantRequest.Instructions,
 	}
@@ -146,7 +150,21 @@ func (o *OpenAi) FindId(c echo.Context) error {
 
 	}
 
-	return responses.JSON(c, http.StatusOK, openai)
+	assistantDTO := dto.AssitantDetailDTO{
+		ID:           openai.ID,
+		Name:         openai.Name,
+		Instructions: openai.Instructions,
+		UserID:       openai.UserID,
+		Collaborator: openai.Collaborator,
+		Type:         openai.Type,
+		Subs:         openai.Subs,
+		Active:       openai.Active,
+		CreatedAt:    openai.CreatedAt,
+		UpdateAt:     openai.UpdateAt,
+		IdAssistant:  openai.IdAssistant,
+	}
+
+	return responses.JSON(c, http.StatusOK, assistantDTO)
 }
 
 func (o *OpenAi) Delete(c echo.Context) error {
@@ -179,5 +197,16 @@ func (o *OpenAi) FindAllUser(c echo.Context) error {
 
 	}
 
-	return responses.JSON(c, http.StatusOK, assistants)
+	// Map goals to a MetaDTO list
+	assistantsDTO := make([]dto.AssitantListDTO, len(assistants))
+	for i, assistant := range assistants {
+		assistantsDTO[i] = dto.AssitantListDTO{
+			ID:     assistant.ID,
+			Active: assistant.Active,
+			Type:   assistant.Type,
+			Name:   assistant.Name,
+		}
+	}
+
+	return responses.JSON(c, http.StatusOK, assistantsDTO)
 }
