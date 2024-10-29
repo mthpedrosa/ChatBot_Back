@@ -42,6 +42,33 @@ func (o *OpenaiMongo) Insert(ctx context.Context, assistant models.CreateAssista
 	return insertedID.Hex(), nil
 }
 
+func (o *OpenaiMongo) Edit(ctx context.Context, ID string, assistant models.CreateAssistant) error {
+	collection := o.db.Collection(openaiCollection)
+
+	assistant.UpdateAt = time.Now().Add(-3 * time.Hour)
+
+	objectID, err := primitive.ObjectIDFromHex(ID)
+	if err != nil {
+		return err
+	}
+
+	// ID filter
+	filter := bson.M{"_id": objectID}
+
+	// Converts the novaConversa struct to a map to use in $set
+	updateFields := bson.M{}
+	bsonBytes, err := bson.Marshal(assistant)
+	if err != nil {
+		return err
+	}
+	bson.Unmarshal(bsonBytes, &updateFields)
+
+	update := bson.M{"$set": updateFields}
+
+	_, err = collection.UpdateOne(ctx, filter, update)
+	return err
+}
+
 func (o *OpenaiMongo) FindAllUser(ctx context.Context, ID string) ([]models.CreateAssistant, error) {
 	collection := o.db.Collection(openaiCollection)
 

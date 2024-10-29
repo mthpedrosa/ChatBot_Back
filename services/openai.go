@@ -5,6 +5,7 @@ import (
 	"autflow_back/models"
 	"autflow_back/models/dto"
 	"autflow_back/repositories"
+	"fmt"
 
 	"autflow_back/utils"
 	"context"
@@ -54,6 +55,19 @@ func (o *OpenAi) Insert(ctx context.Context, dt *dto.AssistantCreateDTO, userID 
 	// Caso contrário, cria no OpenAI primeiro
 	o.logger.Debugf("Creating assistant in OpenAI")
 
+	//Verificamos se existe subs vinculado
+	if len(dt.Subs) > 0 {
+		for i, sub := range dt.Subs {
+			fmt.Printf("Subs[%d] - MongoID: %s\n", i, sub.MongoID)
+			subGet, error := o.openaiMongo.GetAssistant(ctx, sub.MongoID)
+			if error != nil {
+				return "", error
+			}
+
+			assistant.Instructions += subGet.Instructions
+		}
+	}
+
 	idCriado, err := o.openaiRepository.CreateAssistant(ctx, assistant, "gpt-3.5-turbo-16k")
 	if err != nil {
 		return "", err
@@ -77,7 +91,40 @@ func (o *OpenAi) Insert(ctx context.Context, dt *dto.AssistantCreateDTO, userID 
 func (o *OpenAi) Edit(ctx context.Context, dt *dto.AssistantCreateDTO, id string) (string, error) {
 	assistant := dt.ToAssistant()
 
-	return o.openaiRepository.UpdateAssistant(ctx, id, "gpt-3.5-turbo-16k", assistant)
+	// Insere a atualização no MongoDB
+	err := o.openaiMongo.Edit(ctx, id, assistant)
+	if err != nil {
+		return "", err
+	}
+
+	// Verifica se o assistente é do tipo "ass"
+	if assistant.Type == "ass" {
+		fmt.Printf("Updating assistant in OpenAI")
+
+		// Verifica se existem subs vinculados
+		if len(dt.Subs) > 0 {
+			for i, sub := range dt.Subs {
+				fmt.Printf("Subs[%d] - MongoID: %s\n", i, sub.MongoID)
+				subGet, err := o.openaiMongo.GetAssistant(ctx, sub.MongoID)
+				if err != nil {
+					return "", err
+				}
+
+				assistant.Instructions += subGet.Instructions
+			}
+		}
+
+		// Atualiza no OpenAI antes de atualizar no MongoDB
+		updatedID, err := o.openaiRepository.UpdateAssistant(ctx, id, "gpt-3.5-turbo-16k", assistant)
+		if err != nil {
+			return "", err
+		}
+
+		// Atualiza o ID do assistente para refletir no MongoDB após edição no OpenAI
+		assistant.IdAssistant = updatedID
+	}
+
+	return "Editado com sucesso", nil
 }
 
 func (o *OpenAi) FindAll(ctx context.Context, order string, limit int) ([]models.Assistant, error) {
