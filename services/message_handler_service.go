@@ -46,7 +46,7 @@ func (r *MessageHandler) ValidAssistant(ctx context.Context, payload models.Webh
 	var assistantId string
 
 	for _, assistants := range meta.Assistants {
-		fmt.Println("Id assistant vinculado : " + assistants.Id)
+		fmt.Println("Id assistant vinculado : " + assistants.OpenId)
 		if assistants.Active {
 			assistantId = assistants.Id
 		}

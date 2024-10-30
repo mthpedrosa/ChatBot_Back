@@ -57,6 +57,7 @@ func (r *Webhook) WebhookRun(c echo.Context) error {
 		return responses.Erro(c, http.StatusInternalServerError, erro)
 	}
 
+	// Aqui pegamos o ultimo assistante vinculado a conta meta
 	idAssistant, err := r.messageHandler.ValidAssistant(c.Request().Context(), models.WebhookPayload(payload), meta[0])
 	if err != nil {
 		return responses.Erro(c, http.StatusBadRequest, err)

@@ -29,7 +29,7 @@ func NewOpenAi(openai interfaces.OpenAIClientRepository, openaiMongo *repositori
 func (o *OpenAi) Insert(ctx context.Context, dt *dto.AssistantCreateDTO, userID string) (string, error) {
 	assistant := dt.ToAssistant()
 	// Log inicial da criação do assistente
-	o.logger.Debugf("Create Assistant DTO: %+v", *dt)
+	fmt.Printf("Create Assistant DTO: %+v", *dt)
 
 	// Verifica se o assistente é do tipo "sub"
 	if assistant.Type == "sub" {
@@ -52,8 +52,17 @@ func (o *OpenAi) Insert(ctx context.Context, dt *dto.AssistantCreateDTO, userID 
 		return idMongo, nil
 	}
 
+	// Verifica se o assistente sendo editado está sendo ativado e é do tipo "ass"
+	if assistant.Type == "ass" && assistant.Active {
+		// Desativa qualquer outro assistente "ass" ativo do mesmo usuário
+		err := o.openaiMongo.DeactivateOtherAssistants(ctx, "", "ass", userID)
+		if err != nil {
+			return "", err
+		}
+	}
+
 	// Caso contrário, cria no OpenAI primeiro
-	o.logger.Debugf("Creating assistant in OpenAI")
+	fmt.Printf("Creating assistant in OpenAI")
 
 	//Verificamos se existe subs vinculado
 	if len(dt.Subs) > 0 {
@@ -83,7 +92,7 @@ func (o *OpenAi) Insert(ctx context.Context, dt *dto.AssistantCreateDTO, userID 
 		return "", err
 	}
 
-	o.logger.Infof("Assistant created in MongoDB with ID: %s", idMongo)
+	fmt.Printf("Assistant created in MongoDB with ID: %s", idMongo)
 
 	return idMongo, nil
 }
@@ -91,14 +100,29 @@ func (o *OpenAi) Insert(ctx context.Context, dt *dto.AssistantCreateDTO, userID 
 func (o *OpenAi) Edit(ctx context.Context, dt *dto.AssistantCreateDTO, id string) (string, error) {
 	assistant := dt.ToAssistant()
 
+	fmt.Print("---------------------")
+	fmt.Println(assistant)
+
+	// Verifica se o assistente sendo editado está sendo ativado e é do tipo "ass"
+	if assistant.Type == "ass" && assistant.Active {
+		// Desativa qualquer outro assistente "ass" ativo do mesmo usuário
+		err := o.openaiMongo.DeactivateOtherAssistants(ctx, id, "ass", assistant.UserID)
+		if err != nil {
+			return "", err
+		}
+	}
+
 	// Insere a atualização no MongoDB
 	err := o.openaiMongo.Edit(ctx, id, assistant)
 	if err != nil {
 		return "", err
 	}
 
+	newAssistante, err := o.openaiMongo.GetAssistant(ctx, id)
+	fmt.Println(newAssistante)
+
 	// Verifica se o assistente é do tipo "ass"
-	if assistant.Type == "ass" {
+	if newAssistante.Type == "ass" {
 		fmt.Printf("Updating assistant in OpenAI")
 
 		// Verifica se existem subs vinculados
@@ -110,12 +134,12 @@ func (o *OpenAi) Edit(ctx context.Context, dt *dto.AssistantCreateDTO, id string
 					return "", err
 				}
 
-				assistant.Instructions += subGet.Instructions
+				newAssistante.Instructions += " ---- " + subGet.Instructions
 			}
 		}
 
 		// Atualiza no OpenAI antes de atualizar no MongoDB
-		updatedID, err := o.openaiRepository.UpdateAssistant(ctx, id, "gpt-3.5-turbo-16k", assistant)
+		updatedID, err := o.openaiRepository.UpdateAssistant(ctx, newAssistante.IdAssistant, "gpt-3.5-turbo-16k", *newAssistante)
 		if err != nil {
 			return "", err
 		}

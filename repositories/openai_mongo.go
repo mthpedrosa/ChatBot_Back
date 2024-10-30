@@ -134,3 +134,44 @@ func (o *OpenaiMongo) Delete(ctx context.Context, ID string) error {
 	_, err = collection.DeleteOne(ctx, filter)
 	return err
 }
+
+// DeactivateOtherAssistants disables other active assistants of type "ass" for the same user.
+func (o *OpenaiMongo) DeactivateOtherAssistants(ctx context.Context, currentID, assistType, userID string) error {
+	collection := o.db.Collection(openaiCollection)
+
+	fmt.Println("-_-_-_- Iniciando desativação de outros assistentes do tipo 'ass' para o usuário", userID)
+	objectID, err := primitive.ObjectIDFromHex(currentID)
+
+	filter := bson.M{
+		"type":    assistType,
+		"user_id": userID,
+		"_id":     bson.M{"$ne": objectID},
+		"active":  true,
+	}
+
+	// Verificação de documentos afetados pelo filtro antes de atualizar
+	cursor, err := collection.Find(ctx, filter)
+	if err != nil {
+		fmt.Println("Erro ao encontrar documentos:", err)
+		return err
+	}
+	defer cursor.Close(ctx)
+
+	count := 0
+	for cursor.Next(ctx) {
+		count++
+		fmt.Println("Documento encontrado para atualização:", cursor.Current)
+	}
+	fmt.Printf("Total de documentos encontrados para desativação: %d\n", count)
+
+	// Executa a atualização em massa
+	update := bson.M{"$set": bson.M{"active": false}}
+	result, err := collection.UpdateMany(ctx, filter, update)
+	if err != nil {
+		fmt.Println("Erro ao atualizar documentos:", err)
+		return err
+	}
+
+	fmt.Printf("Total de documentos desativados: %d\n", result.ModifiedCount)
+	return nil
+}

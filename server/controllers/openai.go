@@ -102,6 +102,11 @@ func (o *OpenAi) Edit(c echo.Context) error {
 	dt := &dto.AssistantCreateDTO{
 		Name:         createAssistantRequest.Name,
 		Instructions: createAssistantRequest.Instructions,
+		UserID:       createAssistantRequest.UserID,
+		Collaborator: createAssistantRequest.Collaborator,
+		Type:         createAssistantRequest.Type,
+		Subs:         createAssistantRequest.Subs,
+		Active:       createAssistantRequest.Active,
 	}
 
 	retorno, erro := o.openaiService.Edit(c.Request().Context(), dt, ID)

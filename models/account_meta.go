@@ -16,6 +16,7 @@ type PhonesMeta struct {
 }
 
 type AssistantIds struct {
+	OpenId string `json:"open_id"`
 	Id     string `json:"id"`
 	Active bool   `json:"active"`
 }
