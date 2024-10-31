@@ -325,3 +325,79 @@ func (w *whatsappClient) DownloadMedia(ctx context.Context, url, name string) (s
 	fmt.Println("Download concluído com sucesso!")
 	return (name + "." + extension), nil
 }
+
+func (w *whatsappClient) ContactMessage(ctx context.Context, customer models.Customer, meta models.MetaIds) error {
+	res, err := w.httpClient.R().
+		SetContext(ctx).
+		SetHeader("Authorization", "Bearer "+viper.GetString("WP_TOKEN")).
+		SetHeader("Content-Type", "application/json").
+		SetBody(map[string]interface{}{
+			"messaging_product": "whatsapp",
+			"to":                customer.WhatsAppID, // Número do destinatário no WhatsApp
+			"type":              "contacts",
+			"contacts": []map[string]interface{}{
+				{
+					"addresses": []map[string]interface{}{
+						{
+							"street":       "<ADDRESS_STREET>",
+							"city":         "<ADDRESS_CITY>",
+							"state":        "<ADDRESS_STATE>",
+							"zip":          "<ADDRESS_ZIP>",
+							"country":      "<ADDRESS_COUNTRY>",
+							"country_code": "<ADDRESS_COUNTRY_CODE>",
+							"type":         "<HOME|WORK>",
+						},
+					},
+					"birthday": "2022-01-01",
+					"emails": []map[string]interface{}{
+						{
+							"email": "<CONTACT_EMAIL>",
+							"type":  "<WORK|HOME>",
+						},
+					},
+					"name": map[string]interface{}{
+						"formatted_name": "<CONTACT_FORMATTED_NAME>",
+						"first_name":     "<CONTACT_FIRST_NAME>",
+						"last_name":      "<CONTACT_LAST_NAME>",
+						"middle_name":    "<CONTACT_MIDDLE_NAME>",
+						"suffix":         "<CONTACT_SUFFIX>",
+						"prefix":         "<CONTACT_PREFIX>",
+					},
+					"org": map[string]interface{}{
+						"company":    "<CONTACT_ORG_COMPANY>",
+						"department": "<CONTACT_ORG_DEPARTMENT>",
+						"title":      "<CONTACT_ORG_TITLE>",
+					},
+					"phones": []map[string]interface{}{
+						{
+							"phone": "<CONTACT_PHONE>",
+							"wa_id": "<CONTACT_WA_ID>",
+							"type":  "<HOME|WORK>",
+						},
+					},
+					"urls": []map[string]interface{}{
+						{
+							"url":  "<CONTACT_URL>",
+							"type": "<HOME|WORK>",
+						},
+					},
+				},
+			},
+		}).
+		SetDebug(true).
+		Post(meta.PhoneID + "/messages")
+
+	if err != nil {
+		return fmt.Errorf("error sending contact message: %v", err)
+	}
+
+	if res.Error() != nil {
+		return fmt.Errorf("error in response: %v", res.Error())
+	}
+
+	if res.StatusCode() != http.StatusOK {
+		return fmt.Errorf("unexpected response status: %s", res.Status())
+	}
+
+	return nil
+}

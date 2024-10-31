@@ -310,3 +310,38 @@ func createDateFilter(field, value string) (bson.M, error) {
 		return bson.M{"$eq": date}, nil
 	}
 }
+
+func (r *Session) FindCost(ctx context.Context, startDate, endDate time.Time, assistantID string) ([]models.Session, error) {
+	collection := r.db.Collection(sessionsCollection)
+
+	// Ajuste para desconsiderar datas inválidas em `finished_at`
+	filter := bson.M{
+		"assistant_id": assistantID,
+		"finished_at": bson.M{
+			"$gte": startDate,
+			"$lte": endDate,
+			"$ne":  time.Time{}, // Exclui valores de data `0001-01-01T00:00:00Z`
+		},
+	}
+
+	cursor, err := collection.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var sessions []models.Session
+	for cursor.Next(ctx) {
+		var session models.Session
+		if err := cursor.Decode(&session); err != nil {
+			return nil, err
+		}
+		sessions = append(sessions, session)
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+
+	return sessions, nil
+}

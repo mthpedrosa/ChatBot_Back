@@ -56,6 +56,7 @@ func (s *Server) Start() error {
 	loginService := services.NewLogin(userRepository, s.logger)
 	sessionService := services.NewSession(sessionRepository, s.logger)
 	openaiService := services.NewOpenAi(openaiRepository, openaiMongoRepository, s.logger)
+	reportsService := services.NewReports(metaRepository, customerRepository, sessionRepository, conversationsRepository, s.logger, openaiRepository, whatsappRepository)
 
 	//Controllers
 	metaController := controllers.NewMetaController(accountMetaService)
@@ -67,6 +68,7 @@ func (s *Server) Start() error {
 	webhookController := controllers.NewWebhookController(messageHandlerService, accountMetaService)
 	sessionController := controllers.NewSessionController(sessionService)
 	openaiController := controllers.NewOpenAiController(openaiService)
+	reportsController := controllers.NewReportsController(reportsService)
 
 	//Start routes
 	routes.RegisterMetaRoutes(s.e, metaController)
@@ -78,6 +80,7 @@ func (s *Server) Start() error {
 	routes.RegisterWebhookRoutes(s.e, webhookController)
 	routes.RegisterSessionRoutes(s.e, sessionController)
 	routes.RegisterOpenAiRoutes(s.e, openaiController)
+	routes.RegisterReportsRoutes(s.e, reportsController)
 
 	// Middlewares
 	s.e.Use(middleware.CORS())
