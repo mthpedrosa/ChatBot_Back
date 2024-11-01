@@ -11,7 +11,6 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.ngrok.com/ngrok"
 	"golang.ngrok.com/ngrok/config"
@@ -20,8 +19,8 @@ import (
 type Server struct {
 	e           *echo.Echo
 	mongoClient *mongo.Client
-	redis       *redis.Client
-	logger      utils.Logger
+	//redis       *redis.Client
+	logger utils.Logger
 }
 
 func NewServer(mongoClient *mongo.Client, logger utils.Logger, e *echo.Echo) *Server {
@@ -45,6 +44,7 @@ func (s *Server) Start() error {
 	openaiRepository := repositories.NewOpenAiRepository()
 	openaiMongoRepository := repositories.NewOpenAiMongoRepository(s.mongoClient)
 	whatsappRepository := repositories.NewWhatsappRepository()
+	userPlanRepository := repositories.NewUserPlanRepository(s.mongoClient)
 
 	// Services
 	//workflowService := services.NewWorkflow(workflowRepository, metaRepository, customerRepository, sessionRepository, conversationsRepository, s.logger, openaiRepository, whatsappRepository)
@@ -57,6 +57,7 @@ func (s *Server) Start() error {
 	sessionService := services.NewSession(sessionRepository, s.logger)
 	openaiService := services.NewOpenAi(openaiRepository, openaiMongoRepository, s.logger)
 	reportsService := services.NewReports(metaRepository, customerRepository, sessionRepository, conversationsRepository, s.logger, openaiRepository, whatsappRepository)
+	userPlanService := services.NewUserPlanService(userPlanRepository)
 
 	//Controllers
 	metaController := controllers.NewMetaController(accountMetaService)
@@ -69,6 +70,7 @@ func (s *Server) Start() error {
 	sessionController := controllers.NewSessionController(sessionService)
 	openaiController := controllers.NewOpenAiController(openaiService)
 	reportsController := controllers.NewReportsController(reportsService)
+	userPlanController := controllers.NewUserPlanController(userPlanService)
 
 	//Start routes
 	routes.RegisterMetaRoutes(s.e, metaController)
@@ -81,6 +83,7 @@ func (s *Server) Start() error {
 	routes.RegisterSessionRoutes(s.e, sessionController)
 	routes.RegisterOpenAiRoutes(s.e, openaiController)
 	routes.RegisterReportsRoutes(s.e, reportsController)
+	routes.RegisterUserPlanRoutes(s.e, userPlanController)
 
 	// Middlewares
 	s.e.Use(middleware.CORS())

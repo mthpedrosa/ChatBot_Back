@@ -20,9 +20,7 @@ type UserPlanRepository struct {
 
 // NewUserPlanRepository initializes a new repository for UserPlan.
 func NewUserPlanRepository(db *mongo.Client) *UserPlanRepository {
-	return &UserPlanRepository{
-		db: db.Database(dbName),
-	}
+	return &UserPlanRepository{db: db.Database(dbName)}
 }
 
 func (r *UserPlanRepository) Insert(ctx context.Context, userPlan models.UserPlan) (string, error) {
