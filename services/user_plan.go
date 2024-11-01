@@ -7,9 +7,6 @@ import (
 	"context"
 	"errors"
 	"time"
-
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type UserPlanService struct {
@@ -21,7 +18,7 @@ func NewUserPlanService(userPlanRepo *repositories.UserPlanRepository) *UserPlan
 }
 
 // Insert um novo plano de usuário
-func (s *UserPlanService) Insert(ctx context.Context, userPlan requests.UserPlanRequest) (primitive.ObjectID, error) {
+func (s *UserPlanService) Insert(ctx context.Context, userPlan requests.UserPlanRequest) (string, error) {
 	newPlan := models.UserPlan{
 		UserID:       userPlan.UserID,
 		PlanType:     userPlan.PlanType,
@@ -33,43 +30,17 @@ func (s *UserPlanService) Insert(ctx context.Context, userPlan requests.UserPlan
 
 	insertedID, err := s.userPlanRepo.Insert(ctx, newPlan)
 	if err != nil {
-		return primitive.NilObjectID, err
+		return "", err
 	}
 
 	return insertedID, nil
 }
 
 // Edit edits an existing user plan with the provided updateData fields.
-func (s *UserPlanService) Edit(ctx context.Context, planID primitive.ObjectID, updateData models.UserPlan) error {
-	// Verifica se o plano existe
-	existingPlan, err := s.userPlanRepo.FindByID(ctx, planID)
-	if err != nil {
-		return err
-	}
-
-	// Cria um mapa de atualizações para os campos modificados
-	updates := bson.M{}
-
-	if updateData.PlanType != "" && updateData.PlanType != existingPlan.PlanType {
-		updates["plan_type"] = updateData.PlanType
-	}
-	if updateData.Subscription != nil {
-		updates["subscription"] = updateData.Subscription
-	}
-	if updateData.Credit != nil {
-		updates["credit"] = updateData.Credit
-	}
-	if len(updates) > 0 { // Caso haja algo a atualizar
-		updates["updated_at"] = time.Now() // Atualiza o campo updated_at
-	}
-
-	// Verifica se há atualizações antes de chamar o repositório
-	if len(updates) == 0 {
-		return errors.New("nenhuma alteração detectada para o plano do usuário")
-	}
+func (s *UserPlanService) Edit(ctx context.Context, id string, updateData models.UserPlan) error {
 
 	// Atualiza o plano no repositório com os campos relevantes
-	return s.userPlanRepo.Edit(ctx, planID, updates)
+	return s.userPlanRepo.Edit(ctx, id, updateData)
 }
 
 func (s *UserPlanService) FindId(ctx context.Context, id string) (models.UserPlan, error) {
@@ -83,9 +54,9 @@ func (s *UserPlanService) FindId(ctx context.Context, id string) (models.UserPla
 }
 
 // Remove um plano de usuário
-func (s *UserPlanService) Delete(ctx context.Context, planID primitive.ObjectID) error {
+func (s *UserPlanService) Delete(ctx context.Context, id string) error {
 	// Chama a função de deletar no repositório
-	err := s.userPlanRepo.Delete(ctx, planID)
+	err := s.userPlanRepo.Delete(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -94,8 +65,8 @@ func (s *UserPlanService) Delete(ctx context.Context, planID primitive.ObjectID)
 }
 
 // Decrementa o saldo de mensagens restantes em um plano de assinatura
-func (s *UserPlanService) DecrementMessagesRemaining(ctx context.Context, planID primitive.ObjectID, messagesToDecrement int) error {
-	userPlan, err := s.userPlanRepo.FindByID(ctx, planID)
+func (s *UserPlanService) DecrementMessagesRemaining(ctx context.Context, id string, messagesToDecrement int) error {
+	userPlan, err := s.userPlanRepo.FindId(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -108,20 +79,15 @@ func (s *UserPlanService) DecrementMessagesRemaining(ctx context.Context, planID
 		userPlan.Subscription.MessagesRemaining -= messagesToDecrement
 		userPlan.UpdatedAt = time.Now()
 
-		// Cria um mapa de atualizações para os campos modificados
-		updates := bson.M{}
-		updates["subscription"] = userPlan.Subscription
-		updates["updated_at"] = time.Now()
-
-		return s.userPlanRepo.Edit(ctx, userPlan.ID, updates)
+		return s.userPlanRepo.Edit(ctx, id, *userPlan)
 	}
 
 	return errors.New("plano não é do tipo assinatura ou informações de assinatura ausentes")
 }
 
 // Decrementa o saldo de créditos em um plano de crédito
-func (s *UserPlanService) DecrementCreditBalance(ctx context.Context, planID primitive.ObjectID, messagesCount int) error {
-	userPlan, err := s.userPlanRepo.FindByID(ctx, planID)
+func (s *UserPlanService) DecrementCreditBalance(ctx context.Context, id string, messagesCount int) error {
+	userPlan, err := s.userPlanRepo.FindId(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -135,12 +101,7 @@ func (s *UserPlanService) DecrementCreditBalance(ctx context.Context, planID pri
 		userPlan.Credit.Balance -= totalCost
 		userPlan.UpdatedAt = time.Now()
 
-		// Cria um mapa de atualizações para os campos modificados
-		updates := bson.M{}
-		updates["credit"] = userPlan.Credit
-		updates["updated_at"] = time.Now()
-
-		return s.userPlanRepo.Edit(ctx, userPlan.ID, updates)
+		return s.userPlanRepo.Edit(ctx, id, *userPlan)
 	}
 
 	return errors.New("plano não é do tipo crédito ou informações de crédito ausentes")
