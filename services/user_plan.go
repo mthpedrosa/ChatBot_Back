@@ -37,10 +37,16 @@ func (s *UserPlanService) Insert(ctx context.Context, userPlan requests.UserPlan
 }
 
 // Edit edits an existing user plan with the provided updateData fields.
-func (s *UserPlanService) Edit(ctx context.Context, id string, updateData models.UserPlan) error {
+func (s *UserPlanService) Edit(ctx context.Context, id string, updateData requests.UserPlanRequest) error {
+
+	newPlan := models.UserPlan{
+		UserID:       updateData.UserID,
+		PlanType:     updateData.PlanType,
+		Subscription: &updateData.Subscription,
+		Credit:       &updateData.Credit}
 
 	// Atualiza o plano no repositório com os campos relevantes
-	return s.userPlanRepo.Edit(ctx, id, updateData)
+	return s.userPlanRepo.Edit(ctx, id, newPlan)
 }
 
 func (s *UserPlanService) FindId(ctx context.Context, id string) (models.UserPlan, error) {

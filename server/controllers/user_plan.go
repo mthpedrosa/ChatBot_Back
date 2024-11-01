@@ -1,14 +1,14 @@
 package controllers
 
 import (
-	"autflow_back/models"
 	"autflow_back/requests"
 	"autflow_back/services"
+	"autflow_back/src/responses"
+	"errors"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type UserPlanController struct {
@@ -53,18 +53,35 @@ func (ctrl *UserPlanController) Insert(c echo.Context) error {
 
 // EditUserPlan atualiza um plano de usuário existente
 func (ctrl *UserPlanController) Edit(c echo.Context) error {
-	planIDParam := c.Param("id")
-	planID, err := primitive.ObjectIDFromHex(planIDParam)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "invalid plan ID"})
+	// Check request body using Bind
+	userPlanRequest := new(requests.UserPlanRequest)
+
+	if err := c.Bind(userPlanRequest); err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"message": err.Error(),
+		})
 	}
 
-	var updateData models.UserPlan
-	if err := c.Bind(&updateData); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "invalid input"})
+	if err := validate.Struct(userPlanRequest); err != nil {
+		validationErrors := err.(validator.ValidationErrors)
+
+		errorsMessages := []string{}
+		for _, err := range validationErrors {
+			errorsMessages = append(errorsMessages, err.Error())
+		}
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"message": "Validation errors",
+			"errors":  errorsMessages,
+		})
 	}
 
-	if err := ctrl.userPlanService.Edit(c.Request().Context(), planID, updateData); err != nil {
+	// Extract the account ID from the request (e.g., from a parameter in the URL)
+	ID := c.Param("id")
+	if ID == "" {
+		return responses.Erro(c, http.StatusInternalServerError, errors.New("parametro não encontrado"))
+	}
+
+	if err := ctrl.userPlanService.Edit(c.Request().Context(), ID, *userPlanRequest); err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "failed to update user plan"})
 	}
 
@@ -72,14 +89,13 @@ func (ctrl *UserPlanController) Edit(c echo.Context) error {
 }
 
 // DeleteUserPlan exclui um plano de usuário existente
-func (ctrl *UserPlanController) DeleteUserPlan(c echo.Context) error {
-	planIDParam := c.Param("id")
-	planID, err := primitive.ObjectIDFromHex(planIDParam)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "invalid plan ID"})
+func (ctrl *UserPlanController) Delete(c echo.Context) error {
+	ID := c.Param("id")
+	if ID == "" {
+		return responses.Erro(c, http.StatusInternalServerError, errors.New("parametro não encontrado"))
 	}
 
-	if err := ctrl.userPlanService.Delete(c.Request().Context(), planID); err != nil {
+	if err := ctrl.userPlanService.Delete(c.Request().Context(), ID); err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "failed to delete user plan"})
 	}
 
@@ -87,14 +103,13 @@ func (ctrl *UserPlanController) DeleteUserPlan(c echo.Context) error {
 }
 
 // GetUserPlan retorna um plano de usuário pelo ID
-func (ctrl *UserPlanController) GetUserPlan(c echo.Context) error {
-	planIDParam := c.Param("id")
-	planID, err := primitive.ObjectIDFromHex(planIDParam)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "invalid plan ID"})
+func (ctrl *UserPlanController) FindId(c echo.Context) error {
+	ID := c.Param("id")
+	if ID == "" {
+		return responses.Erro(c, http.StatusInternalServerError, errors.New("parametro não encontrado"))
 	}
 
-	userPlan, err := ctrl.userPlanService.FindByID(c.Request().Context(), planID)
+	userPlan, err := ctrl.userPlanService.FindId(c.Request().Context(), ID)
 	if err != nil {
 		return c.JSON(http.StatusNotFound, echo.Map{"error": "user plan not found"})
 	}
