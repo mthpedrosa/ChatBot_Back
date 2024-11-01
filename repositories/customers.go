@@ -45,7 +45,7 @@ func (r *Customers) Insert(ctx context.Context, customer models.Customer) (strin
 	err := collection.FindOne(ctx, filter).Decode(existingUser)
 	if err == nil {
 		// The WhatsApp ID already exists in the database, return an error or an appropriate response
-		return "", errors.New("A user with this WhatsApp ID is already registered")
+		return "", errors.New("a user with this WhatsApp ID is already registered")
 	} else if err != mongo.ErrNoDocuments {
 		// There was an error while querying the database, return the error
 		return "", err
@@ -84,9 +84,10 @@ func (r *Customers) Edit(ctx context.Context, ID string, newCustomer models.Cust
 
 	update := bson.M{
 		"$set": bson.M{
-			"name":  newCustomer.Name,
-			"email": newCustomer.Email,
-			"phone": newCustomer.Phone,
+			"name":      newCustomer.Name,
+			"email":     newCustomer.Email,
+			"phone":     newCustomer.Phone,
+			"update_at": newCustomer.UpdateAt,
 		},
 	} // Editable fields
 
@@ -172,9 +173,6 @@ func (r *Customers) FindId(ctx context.Context, identifier string, byWhatsAppID 
 // Returns an error if there's any issue encountered during the deletion process.
 func (r *Customers) Delete(ctx context.Context, ID string) error {
 	collection := r.db.Collection(customerCollection)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
 
 	objectID, err := primitive.ObjectIDFromHex(ID)
 	if err != nil {

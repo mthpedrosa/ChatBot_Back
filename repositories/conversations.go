@@ -39,7 +39,7 @@ func (c *Conversations) Insert(ctx context.Context, conversation models.Conversa
 	// id generated
 	insertedID, ok := result.InsertedID.(primitive.ObjectID)
 	if !ok {
-		return "", errors.New("Falha ao obter o ID da conversa")
+		return "", errors.New("falha ao obter o ID da conversa")
 	}
 
 	return insertedID.Hex(), nil

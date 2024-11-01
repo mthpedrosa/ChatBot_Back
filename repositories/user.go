@@ -40,7 +40,7 @@ func (r *Users) Insert(ctx context.Context, user models.User) (string, error) {
 
 	if err == nil {
 		// The WhatsApp ID already exists in the database, return an error or an appropriate response
-		return "", errors.New("A user with this Email is already registered")
+		return "", errors.New("a user with this Email is already registered")
 	} else if err != mongo.ErrNoDocuments {
 		// There was an error while querying the database, return the error
 		return "", err
@@ -55,7 +55,7 @@ func (r *Users) Insert(ctx context.Context, user models.User) (string, error) {
 	// The ID generated for the entered user
 	insertedID, ok := result.InsertedID.(primitive.ObjectID)
 	if !ok {
-		return "", errors.New("Falha ao obter o ID do usuário inserido")
+		return "", errors.New("falha ao obter o ID do usuário inserido")
 	}
 
 	return insertedID.Hex(), nil
@@ -77,7 +77,7 @@ func (r *Users) Edit(ctx context.Context, ID string, newUser models.User) error 
 	// filter the id
 	filter := bson.M{"_id": objectID}
 
-	update := bson.M{"$set": bson.M{"name": newUser.Name}} // editable fields
+	update := bson.M{"$set": bson.M{"name": newUser.Name, "update_at": newUser.UpdateAt}} // editable fields
 
 	_, err = collection.UpdateOne(ctx, filter, update)
 	return err

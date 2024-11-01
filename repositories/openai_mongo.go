@@ -140,7 +140,7 @@ func (o *OpenaiMongo) DeactivateOtherAssistants(ctx context.Context, currentID, 
 	collection := o.db.Collection(openaiCollection)
 
 	fmt.Println("-_-_-_- Iniciando desativação de outros assistentes do tipo 'ass' para o usuário", userID)
-	objectID, err := primitive.ObjectIDFromHex(currentID)
+	objectID, _ := primitive.ObjectIDFromHex(currentID)
 
 	filter := bson.M{
 		"type":    assistType,

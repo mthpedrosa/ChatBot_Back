@@ -300,7 +300,7 @@ func (w *whatsappClient) DownloadMedia(ctx context.Context, url, name string) (s
 
 	// Check if the response was successful (status 200)
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("Falha ao baixar o arquivo: status %d", resp.StatusCode)
+		return "", fmt.Errorf("falha ao baixar o arquivo: status %d", resp.StatusCode)
 	}
 
 	contentType := resp.Header.Get("Content-Type")
