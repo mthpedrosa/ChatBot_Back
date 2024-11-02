@@ -9,10 +9,10 @@ import (
 // UserPlan defines the fields for the user's plan model.
 type UserPlan struct {
 	ID           primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
-	UserID       primitive.ObjectID `bson:"user_id" json:"user_id"`
+	UserID       string             `bson:"user_id" json:"user_id"`
 	PlanType     string             `bson:"plan_type" json:"plan_type"` // Can be "subscription" or "credit"
-	Subscription *SubscriptionPlan  `bson:"subscription,omitempty" json:"subscription,omitempty"`
-	Credit       *CreditPlan        `bson:"credit,omitempty" json:"credit,omitempty"`
+	Subscription SubscriptionPlan   `bson:"subscription,omitempty" json:"subscription,omitempty"`
+	Credit       CreditPlan         `bson:"credit,omitempty" json:"credit,omitempty"`
 	CreatedAt    time.Time          `bson:"created_at" json:"created_at"`
 	UpdatedAt    time.Time          `bson:"updated_at" json:"updated_at"`
 }

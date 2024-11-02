@@ -48,7 +48,8 @@ func (s *Server) Start() error {
 
 	// Services
 	//workflowService := services.NewWorkflow(workflowRepository, metaRepository, customerRepository, sessionRepository, conversationsRepository, s.logger, openaiRepository, whatsappRepository)
-	messageHandlerService := services.NewMessageHandler(metaRepository, customerRepository, sessionRepository, conversationsRepository, s.logger, openaiRepository, whatsappRepository)
+	userPlanService := services.NewUserPlanService(userPlanRepository)
+	messageHandlerService := services.NewMessageHandler(metaRepository, customerRepository, sessionRepository, conversationsRepository, s.logger, openaiRepository, whatsappRepository, userPlanRepository, userPlanService)
 	accountMetaService := services.NewMeta(metaRepository, s.logger)
 	conversationService := services.NewConversation(conversationsRepository, s.logger)
 	customerService := services.NewCustomer(workflowRepository, customerRepository, s.logger)
@@ -57,7 +58,6 @@ func (s *Server) Start() error {
 	sessionService := services.NewSession(sessionRepository, s.logger)
 	openaiService := services.NewOpenAi(openaiRepository, openaiMongoRepository, s.logger)
 	reportsService := services.NewReports(metaRepository, customerRepository, sessionRepository, conversationsRepository, s.logger, openaiRepository, whatsappRepository)
-	userPlanService := services.NewUserPlanService(userPlanRepository)
 
 	//Controllers
 	metaController := controllers.NewMetaController(accountMetaService)
@@ -66,7 +66,7 @@ func (s *Server) Start() error {
 	customerController := controllers.NewCustomerController(customerService)
 	userController := controllers.NewUserController(userService)
 	loginController := controllers.NewLoginController(loginService)
-	webhookController := controllers.NewWebhookController(messageHandlerService, accountMetaService)
+	webhookController := controllers.NewWebhookController(messageHandlerService, accountMetaService, userPlanService)
 	sessionController := controllers.NewSessionController(sessionService)
 	openaiController := controllers.NewOpenAiController(openaiService)
 	reportsController := controllers.NewReportsController(reportsService)

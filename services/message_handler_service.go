@@ -22,6 +22,8 @@ type MessageHandler struct {
 	logger                  utils.Logger
 	openaiRepository        interfaces.OpenAIClientRepository
 	whatsappRepository      interfaces.WhatsappRepository
+	userPlanRepository      *repositories.UserPlanRepository
+	userPlanService         *UserPlanService
 }
 
 func NewMessageHandler(
@@ -29,7 +31,7 @@ func NewMessageHandler(
 	customer *repositories.Customers,
 	session *repositories.Session,
 	conversarions *repositories.Conversations,
-	logger utils.Logger, openai interfaces.OpenAIClientRepository, whatsapp interfaces.WhatsappRepository) *MessageHandler {
+	logger utils.Logger, openai interfaces.OpenAIClientRepository, whatsapp interfaces.WhatsappRepository, userPlan *repositories.UserPlanRepository, userPlanService *UserPlanService) *MessageHandler {
 	return &MessageHandler{
 		metaRepository:          meta,
 		logger:                  logger,
@@ -38,6 +40,8 @@ func NewMessageHandler(
 		conversarionsRepository: conversarions,
 		openaiRepository:        openai,
 		whatsappRepository:      whatsapp,
+		userPlanRepository:      userPlan,
+		userPlanService:         userPlanService,
 	}
 }
 
@@ -53,7 +57,7 @@ func (r *MessageHandler) ValidAssistant(ctx context.Context, payload models.Webh
 	}
 
 	if assistantId == "" {
-		return "", errors.New("Não foi possivel localizar um assistante vinculado a essa conta meta")
+		return "", errors.New("não foi possivel localizar um assistante vinculado a essa conta meta")
 	}
 
 	return assistantId, nil
@@ -77,7 +81,7 @@ func (r *MessageHandler) Run(ctx context.Context, payload models.WebhookPayload,
 
 		fmt.Println("Client did not exist, a conversation and a session must have been created here.")
 	} else {
-		session, idConversation, err = r.getInfoSessions(ctx, customer.ID.Hex(), assitantID)
+		session, idConversation, err = r.getInfoSessions(ctx, customer.ID.Hex(), assitantID, meta.UserID)
 		if err != nil {
 			return err
 		}
@@ -248,58 +252,166 @@ func (r *MessageHandler) customerExist(ctx context.Context, payload models.Webho
 		return true, customer[0], "", nil // Customer found
 	}
 
-	return false, models.Customer{}, "", errors.New("Falha ao ler body da solicitação") // Request body reading error
+	return false, models.Customer{}, "", errors.New("falha ao ler body da solicitação") // Request body reading error
 }
 
-func (r *MessageHandler) getInfoSessions(ctx context.Context, idCustomer, idAssistant string) (models.Session, string, error) {
+// func (r *MessageHandler) getInfoSessions(ctx context.Context, idCustomer, idAssistant, userID string) (models.Session, string, error) {
+// 	var newSession models.Session
+// 	var idConversation string
+
+// 	// Query para encontrar sessões existentes
+// 	var query = fmt.Sprintf("customer_id=%s&assistant_id=%s", idCustomer, idAssistant)
+// 	sessions, err := r.sessionRepository.Find(ctx, query)
+// 	if err != nil {
+// 		return models.Session{}, "", err
+// 	}
+
+// 	// Verifica se há uma sessão em progresso
+// 	for _, session := range sessions {
+// 		if session.Status == "in_progress" {
+// 			newSession = session
+// 			idConversation = session.ConversationId
+// 			break
+// 		}
+// 	}
+
+// 	// Se nenhuma sessão em progresso foi encontrada, verifica o saldo e cria nova sessão, se possível
+// 	if newSession.ID.Hex() == "000000000000000000000000" || len(sessions) == 0 {
+// 		// Busca o plano de usuário
+// 		fmt.Println("Buscando o userPlan")
+// 		userPlan, err := r.userPlanRepository.Find(ctx, "user_id="+userID)
+// 		if err != nil {
+// 			return models.Session{}, "", fmt.Errorf("erro ao buscar o plano de usuário: %v", err)
+// 		}
+// 		if len(userPlan) == 0 {
+// 			fmt.Println("Usuario sem plano")
+// 			return models.Session{}, "", fmt.Errorf("usuário não possui plano")
+// 		}
+
+// 		// Verifica saldo para planos de assinatura ou de crédito
+// 		switch userPlan[0].PlanType {
+// 		case "subscription":
+
+// 			fmt.Println(userPlan[0])
+// 			if userPlan[0].Subscription.MessagesRemaining < 1 {
+// 				fmt.Println("saldo insuficiente de mensagens no plano de assinatura")
+// 				return models.Session{}, "", fmt.Errorf("saldo insuficiente de mensagens no plano de assinatura")
+// 			}
+// 			// Decrementa o saldo de mensagens
+// 			err = r.userPlanService.DecrementMessagesRemaining(ctx, userPlan[0].ID.String(), 1)
+// 			if err != nil {
+// 				return models.Session{}, "", fmt.Errorf("erro ao atualizar saldo de mensagens: %v", err)
+// 			}
+// 		case "credit":
+// 			if userPlan[0].Credit.Balance < userPlan[0].Credit.CostPerMessage {
+// 				return models.Session{}, "", fmt.Errorf("saldo insuficiente no plano de crédito")
+// 			}
+// 			// Decrementa o saldo de créditos
+// 			err = r.userPlanService.DecrementCreditBalance(ctx, userPlan[0].ID.Hex(), 1)
+// 			if err != nil {
+// 				return models.Session{}, "", fmt.Errorf("erro ao atualizar saldo de créditos: %v", err)
+// 			}
+// 		default:
+// 			return models.Session{}, "", fmt.Errorf("tipo de plano desconhecido")
+// 		}
+
+// 		// Criar nova conversa, se nenhuma estiver em progresso
+// 		conversation, err := r.conversarionsRepository.Find(ctx, "customer_id="+idCustomer)
+// 		if err != nil || len(conversation) == 0 {
+// 			return models.Session{}, "", fmt.Errorf("erro ao buscar ou criar conversa: %v", err)
+// 		}
+// 		idConversation = conversation[0].ID.Hex()
+
+// 		// Criação de nova sessão com status "in_progress"
+// 		newSession := models.Session{
+// 			ConversationId: idConversation,
+// 			CustomerID:     idCustomer,
+// 			AssistantId:    idAssistant,
+// 			Status:         "in_progress",
+// 		}
+// 		newSession, err = r.sessionRepository.Insert(ctx, newSession)
+// 		if err != nil {
+// 			return models.Session{}, "", fmt.Errorf("erro ao criar nova sessão: %v", err)
+// 		}
+
+// 		fmt.Println(newSession)
+// 	}
+
+// 	return newSession, idConversation, nil
+// }
+
+func (r *MessageHandler) getInfoSessions(ctx context.Context, idCustomer, idAssistant, userID string) (models.Session, string, error) {
 	var newSession models.Session
 	var idConversation string
 
-	var query = fmt.Sprintf("customer_id=%s&assistant_id=%s", idCustomer, idAssistant)
+	query := fmt.Sprintf("customer_id=%s&assistant_id=%s", idCustomer, idAssistant)
 	sessions, err := r.sessionRepository.Find(ctx, query)
 	if err != nil {
 		return models.Session{}, "", err
 	}
 
-	fmt.Println("Secoes encontradas: ")
+	fmt.Println("Sessões encontradas: ")
 	fmt.Println(sessions)
 	for _, session := range sessions {
-		fmt.Println("Dentro do for")
 		if session.Status == "in_progress" {
-			fmt.Println("Procurando  sessoes em progresso : " + session.ID.Hex())
+			fmt.Println("Sessão em progresso encontrada: " + session.ID.Hex())
 			newSession = session
 			idConversation = session.ConversationId
+			return newSession, idConversation, nil // Retorna se já existe sessão ativa
 		}
 	}
 
-	if newSession.ID.Hex() == "000000000000000000000000" || len(sessions) == 0 {
-		var conversations models.Conversation
-		conversations.CustomerId = idCustomer
-		conversations.AssistantId = idAssistant
+	// Cria nova sessão se não houver sessão ativa
+	fmt.Println("Verificando o userPlan")
+	userPlan, err := r.userPlanRepository.Find(ctx, "user_id="+userID)
+	if err != nil {
+		return models.Session{}, "", fmt.Errorf("erro ao buscar o plano de usuário: %v", err)
+	}
+	if len(userPlan) == 0 {
+		return models.Session{}, "", fmt.Errorf("usuário não possui plano")
+	}
 
-		/*idConversation, err := r.conversarionsRepository.Insert(ctx, conversations)
-		if err != nil {
-			return "", "", err
-		}*/
-
-		//Não cria uma nova conversa em toda sessão
-		fmt.Println("vou pesquisar")
-		conversation, err := r.conversarionsRepository.Find(ctx, "customer_id="+idCustomer)
-		if err != nil {
-			return models.Session{}, "", err
+	// Verifica saldo para planos de assinatura ou de crédito
+	switch userPlan[0].PlanType {
+	case "subscription":
+		if userPlan[0].Subscription.MessagesRemaining < 1 {
+			return models.Session{}, "", fmt.Errorf("saldo insuficiente de mensagens no plano de assinatura")
 		}
-		idConversation = conversation[0].ID.Hex()
-
-		var newSession models.Session
-		newSession.ConversationId = idConversation
-		newSession.CustomerID = idCustomer
-		newSession.AssistantId = idAssistant
-		newSession.Status = "in_progress"
-		newSession, err = r.sessionRepository.Insert(ctx, newSession)
+		// Decrementa o saldo de mensagens
+		err = r.userPlanService.DecrementMessagesRemaining(ctx, userPlan[0].ID.Hex(), 1)
 		if err != nil {
-			return models.Session{}, "", err
+			return models.Session{}, "", fmt.Errorf("erro ao atualizar saldo de mensagens: %v", err)
 		}
+	case "credit":
+		if userPlan[0].Credit.Balance < userPlan[0].Credit.CostPerMessage {
+			return models.Session{}, "", fmt.Errorf("saldo insuficiente no plano de crédito")
+		}
+		// Decrementa o saldo de créditos
+		err = r.userPlanService.DecrementCreditBalance(ctx, userPlan[0].ID.Hex(), 1)
+		if err != nil {
+			return models.Session{}, "", fmt.Errorf("erro ao atualizar saldo de créditos: %v", err)
+		}
+	default:
+		return models.Session{}, "", fmt.Errorf("tipo de plano desconhecido")
+	}
 
+	// Se passou pela verificação, cria nova conversa e nova sessão
+	conversation, err := r.conversarionsRepository.Find(ctx, "customer_id="+idCustomer)
+	if err != nil || len(conversation) == 0 {
+		return models.Session{}, "", fmt.Errorf("erro ao buscar ou criar conversa: %v", err)
+	}
+	idConversation = conversation[0].ID.Hex()
+
+	newSession = models.Session{
+		ConversationId: idConversation,
+		CustomerID:     idCustomer,
+		AssistantId:    idAssistant,
+		Status:         "in_progress",
+		CreatedAt:      time.Now(),
+	}
+	newSession, err = r.sessionRepository.Insert(ctx, newSession)
+	if err != nil {
+		return models.Session{}, "", fmt.Errorf("erro ao criar nova sessão: %v", err)
 	}
 
 	return newSession, idConversation, nil
@@ -345,13 +457,13 @@ func (r *MessageHandler) updateSessionField(ctx context.Context, sessionId strin
 // Send message for customer with menu
 func (r *MessageHandler) sendMenu(flowData dto.FlowData, arguments string) error {
 	fmt.Println("send menu")
+	fmt.Println(arguments)
 
 	var nodeMenu models.Node
 	var messageStart = "Oi! Tudo bem? \n \nEu sou a Ana, a assistente virtual do IFSP! Tô aqui pra te ajudar a tirar suas duvidas. 🤗 \n\n"
 	var messageMenu = "Sobre o que vamos falar hoje? *Você quer conferir horarios de aula? Duvidas sobre materias especificas?* É só me contar!"
-	var finalMessage string
 
-	finalMessage = messageStart + messageMenu
+	finalMessage := messageStart + messageMenu
 
 	button1 := models.Button{ID: "pesquisar_passagem", Title: "COMPRAR PASSAGEM", NextNode: "node1"}
 	button2 := models.Button{ID: "meus_bilhetes", Title: "MEUS BILHETES", NextNode: "node2"}

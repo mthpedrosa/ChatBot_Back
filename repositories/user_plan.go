@@ -118,34 +118,30 @@ func (r *UserPlanRepository) FindId(ctx context.Context, ID string) (*models.Use
 }
 
 // Update updates an existing UserPlan with new values.
-func (r *UserPlanRepository) Edit(ctx context.Context, ID string, newUserPlan models.UserPlan) error {
+func (r *UserPlanRepository) Edit(ctx context.Context, ID string, update bson.M) error {
 	collection := r.db.Collection(userPlanCollection)
-
-	newUserPlan.UpdatedAt = time.Now().Add(-3 * time.Hour)
 
 	objectID, err := primitive.ObjectIDFromHex(ID)
 	if err != nil {
 		return err
 	}
 
-	// ID filter
 	filter := bson.M{"_id": objectID}
+	updateDoc := bson.M{
+		"$set": update,
+		"$currentDate": bson.M{
+			"updated_at": true,
+		},
+	}
 
-	// Convert the newUserPlan struct to a map for use in the $set operation.
-	updateFields := bson.M{}
-	bsonBytes, err := bson.Marshal(newUserPlan)
+	result, err := collection.UpdateOne(ctx, filter, updateDoc)
 	if err != nil {
 		return err
 	}
-	err = bson.Unmarshal(bsonBytes, &updateFields)
-	if err != nil {
-		return err
+	if result.MatchedCount == 0 {
+		return errors.New("user plan not found for update")
 	}
-
-	update := bson.M{"$set": updateFields}
-
-	_, err = collection.UpdateOne(ctx, filter, update)
-	return err
+	return nil
 }
 
 // Delete removes a UserPlan by its ID.

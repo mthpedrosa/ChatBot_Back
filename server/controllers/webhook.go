@@ -20,12 +20,14 @@ import (
 type Webhook struct {
 	messageHandler *services.MessageHandler
 	metaService    *services.Meta
+	userPlan       *services.UserPlanService
 }
 
-func NewWebhookController(messageHandler *services.MessageHandler, metaService *services.Meta) *Webhook {
+func NewWebhookController(messageHandler *services.MessageHandler, metaService *services.Meta, userPlan *services.UserPlanService) *Webhook {
 	return &Webhook{
 		messageHandler: messageHandler,
 		metaService:    metaService,
+		userPlan:       userPlan,
 	}
 }
 
@@ -61,6 +63,18 @@ func (r *Webhook) WebhookRun(c echo.Context) error {
 	idAssistant, err := r.messageHandler.ValidAssistant(c.Request().Context(), models.WebhookPayload(payload), meta[0])
 	if err != nil {
 		return responses.Erro(c, http.StatusBadRequest, err)
+	}
+
+	// Valida a existência de créditos ou assinatura
+	userPlan, err := r.userPlan.Find(c.Request().Context(), "user_id="+meta[0].UserID)
+	if err != nil {
+		fmt.Println("Erro ao consultar usuario")
+		return nil
+	}
+
+	if len(userPlan) == 0 {
+		fmt.Println("Usuário sem assinatura ou saldo de créditos")
+		return nil
 	}
 
 	err = r.messageHandler.Run(c.Request().Context(), models.WebhookPayload(payload), meta[0], idAssistant)
