@@ -20,8 +20,31 @@ func NewUserPlanService(userPlanRepo *repositories.UserPlanRepository) *UserPlan
 	return &UserPlanService{userPlanRepo: userPlanRepo}
 }
 
-// Insert um novo plano de usuário
+// Insert verifica se já existe um plano para o user_id. Se sim, ele atualiza; caso contrário, insere um novo plano.
 func (s *UserPlanService) Insert(ctx context.Context, userPlan requests.UserPlanRequest) (string, error) {
+	// Verifica se já existe um plano para o user_id
+	existingPlans, err := s.userPlanRepo.Find(ctx, "user_id="+userPlan.UserID)
+	if err != nil {
+		return "", err
+	}
+
+	if len(existingPlans) > 0 {
+		// Atualiza o plano existente com os novos dados fornecidos
+		updateFields := bson.M{
+			"plan_type":    userPlan.PlanType,
+			"subscription": userPlan.Subscription,
+			"credit":       userPlan.Credit,
+		}
+
+		err = s.userPlanRepo.Edit(ctx, existingPlans[0].ID.Hex(), updateFields)
+		if err != nil {
+			return "", err
+		}
+
+		return existingPlans[0].ID.Hex(), nil // Retorna o ID do plano atualizado
+	}
+
+	// Caso não exista um plano para o user_id, cria um novo
 	newPlan := models.UserPlan{
 		UserID:       userPlan.UserID,
 		PlanType:     userPlan.PlanType,
