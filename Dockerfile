@@ -24,7 +24,7 @@ WORKDIR /root/
 COPY --from=builder /app/app .
 
 # Copia o arquivo .env da pasta /cmd para o diretório de trabalho do container
-COPY ./cmd/.env ./
+#COPY ./cmd/.env ./
 
 # Expõe a porta que o servidor Go utiliza (ajuste conforme o projeto)
 EXPOSE 8080
