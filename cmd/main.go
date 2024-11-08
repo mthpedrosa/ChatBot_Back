@@ -6,9 +6,7 @@ import (
 	"autflow_back/utils"
 	"context"
 	"log"
-	"os"
 
-	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -21,15 +19,15 @@ func main() {
 	config.Load()
 
 	// Carregar as variáveis do arquivo .env
-	envFile := ".env"
-	if os.Getenv("ENV") == "local" {
-		envFile = ".env.local"
-	}
+	// envFile := ".env"
+	// if os.Getenv("ENV") == "local" {
+	// 	envFile = ".env.local"
+	// }
 
-	err := godotenv.Load(envFile)
-	if err != nil {
-		log.Fatalf("Error loading %s file: %v", envFile, err)
-	}
+	// err := godotenv.Load(envFile)
+	// if err != nil {
+	// 	log.Fatalf("Error loading %s file: %v", envFile, err)
+	// }
 
 	// Configura o Viper para carregar variáveis do ambiente
 	viper.AutomaticEnv()
