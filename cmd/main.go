@@ -20,20 +20,19 @@ func main() {
 
 	config.Load()
 
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
-	}
-
-	// dotenv
+	// Carregar as variáveis do arquivo .env
+	envFile := ".env"
 	if os.Getenv("ENV") == "local" {
-		err := godotenv.Load(".env.local")
-		if err != nil {
-			log.Fatalf("Error loading .env file %v", err)
-		}
-
-		viper.AutomaticEnv()
+		envFile = ".env.local"
 	}
+
+	err := godotenv.Load(envFile)
+	if err != nil {
+		log.Fatalf("Error loading %s file: %v", envFile, err)
+	}
+
+	// Configura o Viper para carregar variáveis do ambiente
+	viper.AutomaticEnv()
 
 	log.Println("Starting microservice")
 	ctx, cancel := context.WithCancel(context.Background())

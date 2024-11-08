@@ -37,6 +37,8 @@ func NewWhatsappRepository() interfaces.WhatsappRepository {
 
 func (w *whatsappClient) InteractiveMessage(ctx context.Context, text string, buttonsArray []models.Button, customer models.Customer, meta models.MetaIds) error {
 	// Building buttons
+	fmt.Println("envia mensagem")
+	fmt.Println(customer, meta, buttonsArray)
 	var buttons []map[string]interface{}
 	for _, button := range buttonsArray {
 		buttonData := map[string]interface{}{
@@ -51,7 +53,7 @@ func (w *whatsappClient) InteractiveMessage(ctx context.Context, text string, bu
 
 	res, err := w.httpClient.R().
 		SetContext(ctx).
-		SetHeader("Authorization", "Bearer "+meta.Token).
+		SetHeader("Authorization", "Bearer "+viper.GetString("WP_TOKEN")).
 		SetBody(map[string]interface{}{
 			"recipient_type": "individual",
 			"to":             customer.WhatsAppID,
@@ -90,7 +92,7 @@ func (w *whatsappClient) InteractiveMessage(ctx context.Context, text string, bu
 func (w *whatsappClient) InteractiveMessageList(ctx context.Context, customer models.Customer, meta models.MetaIds, bodyText string, rows []models.Row) error {
 	res, err := w.httpClient.R().
 		SetContext(ctx).
-		SetHeader("Authorization", "Bearer "+meta.Token).
+		SetHeader("Authorization", "Bearer "+viper.GetString("WP_TOKEN")).
 		SetBody(map[string]interface{}{
 			"messaging_product": "whatsapp",
 			"recipient_type":    "individual",
@@ -140,7 +142,7 @@ func (w *whatsappClient) InteractiveMessageList(ctx context.Context, customer mo
 func (w *whatsappClient) SimpleMessage(ctx context.Context, messageSend string, customer models.Customer, meta models.MetaIds) error {
 	res, err := w.httpClient.R().
 		SetContext(ctx).
-		SetHeader("Authorization", "Bearer "+meta.Token).
+		SetHeader("Authorization", "Bearer "+viper.GetString("WP_TOKEN")).
 		SetBody(map[string]interface{}{
 			"messaging_product": "whatsapp",
 			"to":                customer.WhatsAppID,
@@ -242,10 +244,10 @@ func (w *whatsappClient) InteractiveListMessage(ctx context.Context, customer mo
 	return nil
 }
 
-func (w *whatsappClient) GetUrlMedia(ctx context.Context, mediaID string, accessToken string) (string, error) {
+func (w *whatsappClient) GetUrlMedia(ctx context.Context, mediaID string) (string, error) {
 	res, err := w.httpClient.R().
 		SetContext(ctx).
-		SetHeader("Authorization", "Bearer "+accessToken).
+		SetHeader("Authorization", "Bearer "+viper.GetString("WP_TOKEN")).
 		Get(mediaID)
 
 	if err != nil {
@@ -278,15 +280,15 @@ func (w *whatsappClient) GetUrlMedia(ctx context.Context, mediaID string, access
 	return url, nil
 }
 
-func (w *whatsappClient) DownloadMedia(ctx context.Context, url, accessToken string, name string) (string, error) {
+func (w *whatsappClient) DownloadMedia(ctx context.Context, url, name string) (string, error) {
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", err
 	}
 
-	if accessToken != "" {
-		req.Header.Set("Authorization", "Bearer "+accessToken)
+	if viper.GetString("WP_URL") != "" {
+		req.Header.Set("Authorization", "Bearer "+viper.GetString("WP_TOKEN"))
 	}
 
 	client := &http.Client{}
@@ -298,7 +300,7 @@ func (w *whatsappClient) DownloadMedia(ctx context.Context, url, accessToken str
 
 	// Check if the response was successful (status 200)
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("Falha ao baixar o arquivo: status %d", resp.StatusCode)
+		return "", fmt.Errorf("falha ao baixar o arquivo: status %d", resp.StatusCode)
 	}
 
 	contentType := resp.Header.Get("Content-Type")
@@ -322,4 +324,80 @@ func (w *whatsappClient) DownloadMedia(ctx context.Context, url, accessToken str
 
 	fmt.Println("Download concluído com sucesso!")
 	return (name + "." + extension), nil
+}
+
+func (w *whatsappClient) ContactMessage(ctx context.Context, customer models.Customer, meta models.MetaIds) error {
+	res, err := w.httpClient.R().
+		SetContext(ctx).
+		SetHeader("Authorization", "Bearer "+viper.GetString("WP_TOKEN")).
+		SetHeader("Content-Type", "application/json").
+		SetBody(map[string]interface{}{
+			"messaging_product": "whatsapp",
+			"to":                customer.WhatsAppID, // Número do destinatário no WhatsApp
+			"type":              "contacts",
+			"contacts": []map[string]interface{}{
+				{
+					"addresses": []map[string]interface{}{
+						{
+							"street":       "<ADDRESS_STREET>",
+							"city":         "<ADDRESS_CITY>",
+							"state":        "<ADDRESS_STATE>",
+							"zip":          "<ADDRESS_ZIP>",
+							"country":      "<ADDRESS_COUNTRY>",
+							"country_code": "<ADDRESS_COUNTRY_CODE>",
+							"type":         "<HOME|WORK>",
+						},
+					},
+					"birthday": "2022-01-01",
+					"emails": []map[string]interface{}{
+						{
+							"email": "<CONTACT_EMAIL>",
+							"type":  "<WORK|HOME>",
+						},
+					},
+					"name": map[string]interface{}{
+						"formatted_name": "<CONTACT_FORMATTED_NAME>",
+						"first_name":     "<CONTACT_FIRST_NAME>",
+						"last_name":      "<CONTACT_LAST_NAME>",
+						"middle_name":    "<CONTACT_MIDDLE_NAME>",
+						"suffix":         "<CONTACT_SUFFIX>",
+						"prefix":         "<CONTACT_PREFIX>",
+					},
+					"org": map[string]interface{}{
+						"company":    "<CONTACT_ORG_COMPANY>",
+						"department": "<CONTACT_ORG_DEPARTMENT>",
+						"title":      "<CONTACT_ORG_TITLE>",
+					},
+					"phones": []map[string]interface{}{
+						{
+							"phone": "<CONTACT_PHONE>",
+							"wa_id": "<CONTACT_WA_ID>",
+							"type":  "<HOME|WORK>",
+						},
+					},
+					"urls": []map[string]interface{}{
+						{
+							"url":  "<CONTACT_URL>",
+							"type": "<HOME|WORK>",
+						},
+					},
+				},
+			},
+		}).
+		SetDebug(true).
+		Post(meta.PhoneID + "/messages")
+
+	if err != nil {
+		return fmt.Errorf("error sending contact message: %v", err)
+	}
+
+	if res.Error() != nil {
+		return fmt.Errorf("error in response: %v", res.Error())
+	}
+
+	if res.StatusCode() != http.StatusOK {
+		return fmt.Errorf("unexpected response status: %s", res.Status())
+	}
+
+	return nil
 }

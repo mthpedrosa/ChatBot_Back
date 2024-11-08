@@ -1,11 +1,13 @@
 package requests
 
-import "autflow_back/models"
+import (
+	"autflow_back/models"
+)
 
 type CreateMetaRequest struct {
-	Name           string              `json:"name,omitempty" bson:"name,omitempty"`
-	Token          string              `json:"token" bson:"token"`
-	MetaID         string              `json:"meta_id" bson:"meta_id"`
-	PhonesMeta     []models.PhonesMeta `json:"phones_meta" bson:"phones_meta"`
-	EditPermission []string            `json:"edit_permission" bson:"edit_permission"`
+	Name          string                `json:"name,omitempty" bson:"name,omitempty"`
+	PhoneNumberId string                `json:"phone_id" bson:"phone_id"`
+	BusinessId    string                `json:"business_id" bson:"business_id"`
+	Assistants    []models.AssistantIds `json:"assistants" bson:"assistants"`
+	UserID        string                `json:"user_id" bson:"user_id"`
 }

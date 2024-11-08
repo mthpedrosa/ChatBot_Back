@@ -10,7 +10,7 @@ import (
 
 type SessionCreateDTO struct {
 	CustomerID     string           `json:"customer_id,omitempty" bson:"customer_id"`
-	WorkflowId     string           `json:"workflow_id,omitempty" bson:"workflow_id"`
+	AssistantId    string           `json:"assistant_id,omitempty" bson:"assistant_id"`
 	ConversationId string           `json:"conversation_id" bson:"conversation_id"`
 	Status         string           `json:"status" bson:"status"`
 	Tags           []string         `json:"tags,omitempty" bson:"tags,omitempty"`
@@ -22,7 +22,7 @@ type SessionCreateDTO struct {
 type SessionListDTO struct {
 	ID             primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
 	CustomerID     string             `json:"customer_id,omitempty" bson:"customer_id"`
-	WorkflowId     string             `json:"workflow_id,omitempty" bson:"workflow_id"`
+	AssistantId    string             `json:"assistant_id,omitempty" bson:"assistant_id"`
 	ConversationId string             `json:"conversation_id" bson:"conversation_id"`
 	Status         string             `json:"status" bson:"status"`
 }
@@ -30,7 +30,7 @@ type SessionListDTO struct {
 type SessionDetailDTO struct {
 	ID             primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
 	CustomerID     string             `json:"customer_id,omitempty" bson:"customer_id"`
-	WorkflowId     string             `json:"workflow_id,omitempty" bson:"workflow_id"`
+	AssistantId    string             `json:"assistant_id,omitempty" bson:"assistant_id"`
 	ConversationId string             `json:"conversation_id" bson:"conversation_id"`
 	Status         string             `json:"status" bson:"status"`
 	Duration       string             `json:"duration" bson:"duration"`
@@ -46,7 +46,7 @@ type SessionDetailDTO struct {
 func (dto *SessionCreateDTO) ToSession() models.Session {
 	return models.Session{
 		CustomerID:     dto.CustomerID,
-		WorkflowId:     dto.WorkflowId,
+		AssistantId:    dto.AssistantId,
 		ConversationId: dto.ConversationId,
 		Status:         dto.Status,
 		Tags:           dto.Tags,
@@ -64,8 +64,8 @@ func (dto *SessionCreateDTO) Validate() error {
 		return errors.New("O ConversationId é obrigatório e não pode estar em branco.")
 	}
 
-	if dto.WorkflowId == "" {
-		return errors.New("O WorkflowId é obrigatório e não pode estar em branco.")
+	if dto.AssistantId == "" {
+		return errors.New("O AssistantId é obrigatório e não pode estar em branco.")
 	}
 
 	return nil

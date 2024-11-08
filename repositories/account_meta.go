@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/rand"
 	"net/url"
 	"time"
 
@@ -28,11 +27,10 @@ func (r *Metas) Insert(ctx context.Context, meta models.Meta) (string, error) {
 	collection := r.db.Collection(metaAccountsCollection)
 
 	meta.CreatedAt = time.Now().Add(-3 * time.Hour)
-	meta.Webhook = WebhookGenerate(10)
 
 	// Check if the user's email already exists in the database.
 	existingContaMeta := &models.Meta{}
-	filter := bson.M{"token": meta.Token}
+	filter := bson.M{"user_id": meta.PhoneNumberId}
 	err := collection.FindOne(ctx, filter).Decode(existingContaMeta)
 
 	if err == nil {
@@ -166,31 +164,31 @@ func (r *Metas) Delete(ctx context.Context, ID string) error {
 }
 
 // Search for the meta account based on the provided phone ID.
-func (r *Metas) FindPhoneID(ctx context.Context, ID string) (*models.Meta, error) {
-	collection := r.db.Collection(metaAccountsCollection)
+// func (r *Metas) FindPhoneID(ctx context.Context, ID string) (*models.Meta, error) {
+// 	collection := r.db.Collection(metaAccountsCollection)
 
-	filter := bson.M{
-		"phones_meta": bson.M{
-			"$elemMatch": bson.M{"id": ID},
-		},
-	}
+// 	filter := bson.M{
+// 		"phones_meta": bson.M{
+// 			"$elemMatch": bson.M{"id": ID},
+// 		},
+// 	}
 
-	var meta models.Meta
-	err := collection.FindOne(ctx, filter).Decode(&meta)
-	if err != nil {
-		return nil, err
-	}
+// 	var meta models.Meta
+// 	err := collection.FindOne(ctx, filter).Decode(&meta)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return &meta, nil
-}
+// 	return &meta, nil
+// }
 
-func WebhookGenerate(tamanho int) string {
-	var letras = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-	rand.Seed(time.Now().UnixNano())
+// func WebhookGenerate(tamanho int) string {
+// 	var letras = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+// 	rand.Seed(time.Now().UnixNano())
 
-	b := make([]rune, tamanho)
-	for i := range b {
-		b[i] = letras[rand.Intn(len(letras))]
-	}
-	return string(b)
-}
+// 	b := make([]rune, tamanho)
+// 	for i := range b {
+// 		b[i] = letras[rand.Intn(len(letras))]
+// 	}
+// 	return string(b)
+// }

@@ -14,4 +14,8 @@ const (
 	userCollection = "users"
 
 	workflowCollection = "workflows"
+
+	openaiCollection = "assitants"
+
+	userPlanCollection = "user_plan"
 )

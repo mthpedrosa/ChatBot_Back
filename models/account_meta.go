@@ -15,18 +15,26 @@ type PhonesMeta struct {
 	BusinessId string `json:"business_id" bson:"business_id"`
 }
 
+type AssistantIds struct {
+	OpenId string `json:"open_id"`
+	Id     string `json:"id"`
+	Active bool   `json:"active"`
+}
+
 type Meta struct {
-	ID             primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Name           string             `json:"name,omitempty" bson:"name,omitempty"`
-	Token          string             `json:"token" bson:"token"`
-	MetaID         string             `json:"meta_id" bson:"meta_id"`
-	PhonesMeta     []PhonesMeta       `json:"phones_meta" bson:"phones_meta"`
-	EditPermission []string           `json:"edit_permission" bson:"edit_permission"`
-	CreatedAt      time.Time          `json:"created_at" bson:"created_at"`
-	UpdateAt       time.Time          `json:"update_at" bson:"update_at"`
-	CreatedBy      string             `json:"created_by_id" bson:"created_by_id"`
-	Webhook        string             `json:"webhook" bson:"webhook"`
-	OtherFields    []Fields           `json:"other_fields" bson:"other_fields"`
+	ID            primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Name          string             `json:"name,omitempty" bson:"name,omitempty"`
+	PhoneNumberId string             `json:"phone_id" bson:"phone_id"`
+	BusinessId    string             `json:"business_id" bson:"business_id"`
+	CreatedAt     time.Time          `json:"created_at" bson:"created_at"`
+	UpdateAt      time.Time          `json:"update_at" bson:"update_at"`
+	Assistants    []AssistantIds     `json:"assistants" bson:"assistants"`
+	UserID        string             `json:"user_id" bson:"user_id"`
+	//MetaID     string             `json:"meta_id" bson:"meta_id"`
+	//Webhook        string         `json:"webhook" bson:"webhook"`
+	//Token          string             `json:"token" bson:"token"`
+	//EditPermission []string       `json:"edit_permission" bson:"edit_permission"`
+	//PhonesMeta     []PhonesMeta   `json:"phones_meta" bson:"phones_meta"`
 }
 
 type MetaIds struct {
@@ -53,18 +61,13 @@ func (meta *Meta) validate(etapa string) error {
 	if meta.Name == "" {
 		return errors.New("O nome é obrigatório e não pode estar em branco.")
 	}
-	if meta.Token == "" {
-		return errors.New("O token é obrigatório e não pode estar em branco.")
+
+	if meta.PhoneNumberId == "" {
+		return errors.New("O numero é obrigatório e não pode estar em branco.")
 	}
 
-	if meta.MetaID == "" {
-		return errors.New("O ID da conta META é obrigatório e não pode estar em branco.")
-	}
-
-	for _, telefones := range meta.PhonesMeta {
-		if telefones.Id == "" {
-			return errors.New("O id do telefone é obrigatorio")
-		}
+	if meta.BusinessId == "" {
+		return errors.New("O BusinessId é obrigatório e não pode estar em branco.")
 	}
 
 	return nil
@@ -73,16 +76,5 @@ func (meta *Meta) validate(etapa string) error {
 // Formatar - Remove white spaces.
 func (meta *Meta) format(etapa string) error {
 	meta.Name = strings.TrimSpace(meta.Name)
-	meta.Token = strings.TrimSpace(meta.Token)
-
-	/*if etapa == "cadastro" {
-		senhaComHash, erro := seguranca.Hash(usuario.Senha)
-		if erro != nil {
-			return erro
-		}
-
-		usuario.Senha = string(senhaComHash)
-	}*/
-
 	return nil
 }

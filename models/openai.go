@@ -1,5 +1,11 @@
 package models
 
+import (
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
+
 type PostData struct {
 	ThreadId          string `json:"threadId"`
 	RunId             string `json:"runId"`
@@ -127,4 +133,64 @@ type ThreadIds struct {
 	ThreadId  string
 	RunId     string
 	MessageId string
+}
+
+// Tool represents the structure for the tools field in the JSON.
+type Tool struct {
+	Type string `json:"type"`
+}
+
+// ToolResources represents the structure for the tool_resources field in the JSON.
+type ToolResources struct {
+	VectorStoreIDs []string `json:"vector_store_ids"`
+}
+
+// Assistant represents the structure for the entire JSON.
+type Assistant struct {
+	ID             string                   `json:"id"`
+	Object         string                   `json:"object"`
+	CreatedAt      int64                    `json:"created_at"`
+	Name           string                   `json:"name"`
+	Description    *string                  `json:"description"`
+	Model          string                   `json:"model"`
+	Instructions   string                   `json:"instructions"`
+	Tools          []Tool                   `json:"tools"`
+	ToolResources  map[string]ToolResources `json:"tool_resources"`
+	Metadata       map[string]interface{}   `json:"metadata"`
+	TopP           float64                  `json:"top_p"`
+	Temperature    float64                  `json:"temperature"`
+	ResponseFormat string                   `json:"response_format"`
+	UserID         string                   `json:"user_id" bson:"user_id"`
+}
+
+// AssistantDeleted represents the structure for the JSON.
+type AssistantDeleted struct {
+	ID      string `json:"id"`
+	Object  string `json:"object"`
+	Deleted bool   `json:"deleted"`
+}
+
+type AssistantRepo struct {
+	UserId  string `json:"userid"`
+	Object  string `json:"object"`
+	Deleted bool   `json:"deleted"`
+}
+
+// Model for save in mongoDB
+type CreateAssistant struct {
+	ID           primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Name         string             `json:"name,omitempty" bson:"name,omitempty"`
+	Instructions string             `json:"instructions,omitempty" bson:"instructions,omitempty"`
+	UserID       string             `json:"user_id" bson:"user_id,omitempty"`
+	Collaborator string             `json:"collaborator_id,omitempty" bson:"collaborator_id,omitempty"`
+	Type         string             `json:"type" bson:"type"`
+	IdAssistant  string             `json:"assistant_id,omitempty" bson:"assistant_id,omitempty"`
+	Subs         []Subs             `json:"subs" bson:"subs"`
+	Active       bool               `json:"active" bson:"active"`
+	CreatedAt    time.Time          `json:"created_at" bson:"created_at"`
+	UpdateAt     time.Time          `json:"update_at" bson:"update_at"`
+}
+
+type Subs struct {
+	MongoID string `json:"mongo_id,omitempty" bson:"mongo_id,omitempty"`
 }

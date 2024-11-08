@@ -45,7 +45,7 @@ func (r *Session) Insert(ctx context.Context, sessions models.Session) (models.S
 	// id generated
 	insertedID, ok := result.InsertedID.(primitive.ObjectID)
 	if !ok {
-		return models.Session{}, errors.New("Falha ao obter o ID da sessão")
+		return models.Session{}, errors.New("falha ao obter o ID da sessão")
 	}
 	sessions.ID = insertedID
 
@@ -100,7 +100,7 @@ func (r *Session) Find(ctx context.Context, queryString string) ([]models.Sessio
 					filter[string(f.Key)] = f.Value
 				}
 			} else if key == "created_at" || key == "update_at" || key == "finished_at" {
-				dateFilter, err := createDateFilter(key, value)
+				dateFilter, err := createDateFilter(value)
 				if err != nil {
 					fmt.Println("Erro ao criar filtro de data:", err)
 					continue
@@ -165,9 +165,6 @@ func (r *Session) FindId(ctx context.Context, identifier string) (*models.Sessio
 func (r *Session) Delete(ctx context.Context, ID string) error {
 	collection := r.db.Collection(sessionsCollection)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
 	objectID, err := primitive.ObjectIDFromHex(ID)
 	if err != nil {
 		return err
@@ -185,10 +182,6 @@ func (r *Session) InsertMessage(ctx context.Context, idSession string, newMessag
 
 	//set timestampo now
 	newMessage.Timestamp = time.Now().Unix()
-
-	// Create a context with a timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
 
 	// Convert the string to the mongo object id
 	objectID, erro := primitive.ObjectIDFromHex(idSession)
@@ -221,10 +214,6 @@ func (r *Session) UpdateLastNode(ctx context.Context, idNode string, idSession s
 	if erro != nil {
 		return erro
 	}
-
-	// Create a context with a timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
 
 	// Update to set the "last_node" field with the provided value
 	update := bson.M{"$set": bson.M{"last_node": idNode}}
@@ -285,7 +274,7 @@ func parseOtherFields(otherFieldsStr string) bson.D {
 	return otherFieldsFilters
 }
 
-func createDateFilter(field, value string) (bson.M, error) {
+func createDateFilter(value string) (bson.M, error) {
 	// Verifica se o valor é um intervalo de datas
 	if strings.Contains(value, ",") {
 		dates := strings.Split(value, ",")
@@ -309,4 +298,39 @@ func createDateFilter(field, value string) (bson.M, error) {
 		}
 		return bson.M{"$eq": date}, nil
 	}
+}
+
+func (r *Session) FindCost(ctx context.Context, startDate, endDate time.Time, assistantID string) ([]models.Session, error) {
+	collection := r.db.Collection(sessionsCollection)
+
+	// Ajuste para desconsiderar datas inválidas em `finished_at`
+	filter := bson.M{
+		"assistant_id": assistantID,
+		"finished_at": bson.M{
+			"$gte": startDate,
+			"$lte": endDate,
+			"$ne":  time.Time{}, // Exclui valores de data `0001-01-01T00:00:00Z`
+		},
+	}
+
+	cursor, err := collection.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var sessions []models.Session
+	for cursor.Next(ctx) {
+		var session models.Session
+		if err := cursor.Decode(&session); err != nil {
+			return nil, err
+		}
+		sessions = append(sessions, session)
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+
+	return sessions, nil
 }

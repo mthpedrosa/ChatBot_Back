@@ -9,7 +9,7 @@ import (
 type Session struct {
 	ID             primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
 	CustomerID     string             `json:"customer_id,omitempty" bson:"customer_id"`
-	WorkflowId     string             `json:"workflow_id,omitempty" bson:"workflow_id"`
+	AssistantId    string             `json:"assistant_id,omitempty" bson:"assistant_id"`
 	ConversationId string             `json:"conversation_id" bson:"conversation_id"`
 	Status         string             `json:"status" bson:"status"`
 	Duration       string             `json:"duration" bson:"duration"`

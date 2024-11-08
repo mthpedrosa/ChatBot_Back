@@ -38,7 +38,7 @@ func (r *Workflows) Insert(ctx context.Context, workflow models.Workflow) (strin
 	// Return id generate
 	insertedID, ok := result.InsertedID.(primitive.ObjectID)
 	if !ok {
-		return "", errors.New("Falha ao obter o ID do Workflow inserido")
+		return "", errors.New("falha ao obter o ID do Workflow inserido")
 	}
 
 	return insertedID.Hex(), nil

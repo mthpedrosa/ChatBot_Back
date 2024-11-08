@@ -4,7 +4,6 @@ import (
 	"autflow_back/models/dto"
 	"autflow_back/requests"
 	"autflow_back/services"
-	"autflow_back/src/authentication"
 	"autflow_back/src/responses"
 	"errors"
 	"net/http"
@@ -50,18 +49,17 @@ func (r *Meta) Insert(c echo.Context) error {
 	}
 
 	// ID of the user creating the user
-	creatorUser, erro := authentication.ExtractIdToken(c.Request())
-	if erro != nil {
-		return responses.Erro(c, http.StatusBadRequest, erro)
-	}
+	// creatorUser, erro := authentication.ExtractIdToken(c.Request())
+	// if erro != nil {
+	// 	return responses.Erro(c, http.StatusBadRequest, erro)
+	// }
 
 	dt := &dto.CreateMetaDTO{
-		Name:           createMetaRequest.Name,
-		Token:          createMetaRequest.Token,
-		MetaID:         createMetaRequest.MetaID,
-		PhonesMeta:     createMetaRequest.PhonesMeta,
-		EditPermission: createMetaRequest.EditPermission,
-		CreatedBy:      creatorUser,
+		Name:          createMetaRequest.Name,
+		PhoneNumberId: createMetaRequest.PhoneNumberId,
+		BusinessId:    createMetaRequest.BusinessId,
+		Assistants:    createMetaRequest.Assistants,
+		UserID:        createMetaRequest.UserID,
 	}
 
 	// Call the service with the Meta
@@ -91,11 +89,11 @@ func (r *Meta) Find(c echo.Context) error {
 	metasDTO := make([]dto.MetaListDTO, len(metas))
 	for i, meta := range metas {
 		metasDTO[i] = dto.MetaListDTO{
-			ID:             meta.ID,
-			Name:           meta.Name,
-			MetaID:         meta.MetaID,
-			PhonesMeta:     meta.PhonesMeta,
-			EditPermission: meta.EditPermission,
+			ID:            meta.ID,
+			Name:          meta.Name,
+			PhoneNumberId: meta.PhoneNumberId,
+			BusinessId:    meta.BusinessId,
+			UserID:        meta.UserID,
 		}
 	}
 
@@ -116,17 +114,14 @@ func (r *Meta) FindId(c echo.Context) error {
 	}
 
 	metaDTO := dto.MetaDetailDTO{
-		ID:             meta.ID,
-		Name:           meta.Name,
-		Token:          meta.Token,
-		MetaID:         meta.MetaID,
-		PhonesMeta:     meta.PhonesMeta,
-		EditPermission: meta.EditPermission,
-		CreatedAt:      meta.CreatedAt,
-		UpdateAt:       meta.UpdateAt,
-		CreatedBy:      meta.CreatedBy,
-		Webhook:        meta.Webhook,
-		OtherFields:    meta.OtherFields,
+		ID:            meta.ID,
+		Name:          meta.Name,
+		PhoneNumberId: meta.PhoneNumberId,
+		BusinessId:    meta.BusinessId,
+		CreatedAt:     meta.CreatedAt,
+		UpdateAt:      meta.UpdateAt,
+		Assistants:    meta.Assistants,
+		UserID:        meta.UserID,
 	}
 
 	return responses.JSON(c, http.StatusOK, metaDTO)
@@ -162,11 +157,11 @@ func (r *Meta) Edit(c echo.Context) error {
 	}
 
 	dt := &dto.CreateMetaDTO{
-		Name:           createMetaRequest.Name,
-		Token:          createMetaRequest.Token,
-		MetaID:         createMetaRequest.MetaID,
-		PhonesMeta:     createMetaRequest.PhonesMeta,
-		EditPermission: createMetaRequest.EditPermission,
+		Name:          createMetaRequest.Name,
+		PhoneNumberId: createMetaRequest.PhoneNumberId,
+		BusinessId:    createMetaRequest.BusinessId,
+		Assistants:    createMetaRequest.Assistants,
+		UserID:        createMetaRequest.UserID,
 	}
 
 	erro := r.metaService.Edit(c.Request().Context(), dt, ID)

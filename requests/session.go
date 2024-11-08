@@ -4,7 +4,7 @@ import "autflow_back/models"
 
 type SessionRequest struct {
 	CustomerID     string           `json:"customer_id,omitempty" bson:"customer_id"`
-	WorkflowId     string           `json:"workflow_id,omitempty" bson:"workflow_id"`
+	AssistantId    string           `json:"assistant_id,omitempty" bson:"assistant_id"`
 	ConversationId string           `json:"conversation_id" bson:"conversation_id"`
 	Status         string           `json:"status" bson:"status"`
 	Tags           []string         `json:"tags,omitempty" bson:"tags,omitempty"`

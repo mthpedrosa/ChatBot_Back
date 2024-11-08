@@ -48,7 +48,7 @@ func (r *Session) Insert(c echo.Context) error {
 
 	dt := &dto.SessionCreateDTO{
 		CustomerID:     createSessionRequest.CustomerID,
-		WorkflowId:     createSessionRequest.WorkflowId,
+		AssistantId:    createSessionRequest.AssistantId,
 		ConversationId: createSessionRequest.ConversationId,
 		Status:         createSessionRequest.Status,
 		Tags:           createSessionRequest.Tags,
@@ -87,7 +87,7 @@ func (r *Session) Find(c echo.Context) error {
 		sessionDTO[i] = dto.SessionListDTO{
 			ID:             session.ID,
 			CustomerID:     session.CustomerID,
-			WorkflowId:     session.WorkflowId,
+			AssistantId:    session.AssistantId,
 			ConversationId: session.ConversationId,
 			Status:         session.Status,
 		}
@@ -112,7 +112,7 @@ func (r *Session) FindId(c echo.Context) error {
 	sessionDTO := dto.SessionDetailDTO{
 		ID:             session.ID,
 		CustomerID:     session.CustomerID,
-		WorkflowId:     session.WorkflowId,
+		AssistantId:    session.AssistantId,
 		ConversationId: session.ConversationId,
 		Status:         session.Status,
 		Duration:       session.Duration,
@@ -153,7 +153,7 @@ func (r *Session) Edit(c echo.Context) error {
 
 	dt := &dto.SessionCreateDTO{
 		CustomerID:     createSessionRequest.CustomerID,
-		WorkflowId:     createSessionRequest.WorkflowId,
+		AssistantId:    createSessionRequest.AssistantId,
 		ConversationId: createSessionRequest.ConversationId,
 		Status:         createSessionRequest.Status,
 		Tags:           createSessionRequest.Tags,

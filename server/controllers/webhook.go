@@ -18,19 +18,22 @@ import (
 }*/
 
 type Webhook struct {
-	workflowService *services.Workflow
-	metaService     *services.Meta
+	messageHandler *services.MessageHandler
+	metaService    *services.Meta
+	userPlan       *services.UserPlanService
 }
 
-func NewWebhookController(workflowService *services.Workflow, metaService *services.Meta) *Webhook {
+func NewWebhookController(messageHandler *services.MessageHandler, metaService *services.Meta, userPlan *services.UserPlanService) *Webhook {
 	return &Webhook{
-		workflowService: workflowService,
-		metaService:     metaService,
+		messageHandler: messageHandler,
+		metaService:    metaService,
+		userPlan:       userPlan,
 	}
 }
 
 func (r *Webhook) WebhookRun(c echo.Context) error {
 	var payload models.WebhookPayload
+	fmt.Println("Start conversation process")
 
 	// Extract the ID from the request
 	webhookId := c.Param("id")
@@ -48,18 +51,33 @@ func (r *Webhook) WebhookRun(c echo.Context) error {
 		return nil
 	}
 
+	fmt.Print("ID Meta payload : " + payload.Entry[0].Changes[0].Value.MetaData.PhoneNumberId)
+
 	// Check account_meta
-	meta, erro := r.metaService.Find(c.Request().Context(), "webhook="+webhookId)
+	meta, erro := r.metaService.Find(c.Request().Context(), "phone_id="+payload.Entry[0].Changes[0].Value.MetaData.PhoneNumberId)
 	if erro != nil {
 		return responses.Erro(c, http.StatusInternalServerError, erro)
 	}
 
-	workflow, err := r.workflowService.IdentifyWorkflow(c.Request().Context(), models.WebhookPayload(payload), meta[0])
+	// Aqui pegamos o ultimo assistante vinculado a conta meta
+	idAssistant, err := r.messageHandler.ValidAssistant(c.Request().Context(), models.WebhookPayload(payload), meta[0])
 	if err != nil {
 		return responses.Erro(c, http.StatusBadRequest, err)
 	}
 
-	err = r.workflowService.RunWorkflow(c.Request().Context(), models.WebhookPayload(payload), meta[0], workflow)
+	// Valida a existência de créditos ou assinatura
+	userPlan, err := r.userPlan.Find(c.Request().Context(), "user_id="+meta[0].UserID)
+	if err != nil {
+		fmt.Println("Erro ao consultar usuario")
+		return nil
+	}
+
+	if len(userPlan) == 0 {
+		fmt.Println("Usuário sem assinatura ou saldo de créditos")
+		return nil
+	}
+
+	err = r.messageHandler.Run(c.Request().Context(), models.WebhookPayload(payload), meta[0], idAssistant)
 	/*if err != nil {
 		return responses.Erro(c, http.StatusBadRequest, err)
 	}*/
@@ -71,6 +89,7 @@ func (r *Webhook) WebhookRun(c echo.Context) error {
 // Validate meta parameters
 func (r *Webhook) WebhookCheck(c echo.Context) error {
 	verifyToken := c.QueryParam("hub.challenge")
+	fmt.Println("Start webhook validation process:")
 
 	if verifyToken != "" {
 		fmt.Println("Token de verificação encontrado:", verifyToken)
