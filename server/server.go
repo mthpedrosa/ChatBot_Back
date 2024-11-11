@@ -6,14 +6,11 @@ import (
 	"autflow_back/server/routes"
 	"autflow_back/services"
 	"autflow_back/utils"
-	"context"
 	"log"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"go.mongodb.org/mongo-driver/mongo"
-	"golang.ngrok.com/ngrok"
-	"golang.ngrok.com/ngrok/config"
 )
 
 type Server struct {
@@ -93,25 +90,9 @@ func (s *Server) Start() error {
 	s.e.Use(middleware.Gzip())
 	s.e.Use(middleware.Secure())
 
-	// Configuração do Ngrok
-	ctx := context.Background()
-	listener, err := ngrok.Listen(ctx,
-		config.HTTPEndpoint(
-			config.WithDomain("talented-starling-quietly.ngrok-free.app"),
-		),
-		ngrok.WithAuthtokenFromEnv(),
-	)
-	if err != nil {
-		return err
-	}
-
-	// Inicia o servidor Echo usando o listener do Ngrok
-	s.e.Listener = listener
-
-	log.Println("Ngrok tunnel established at:", listener.URL())
-
-	// Agora inicie o servidor Echo usando o listener do Ngrok
-	if err := s.e.StartServer(s.e.Server); err != nil {
+	// Inicia o servidor Echo diretamente na porta desejada
+	log.Println("Iniciando o servidor Echo na porta 8080...")
+	if err := s.e.Start(":8080"); err != nil {
 		return err
 	}
 
