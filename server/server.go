@@ -37,11 +37,11 @@ func (s *Server) Start() error {
 	sessionRepository := repositories.NewSessionsRepository(s.mongoClient)
 	userRepository := repositories.NewUsersRepository(s.mongoClient)
 	workflowRepository := repositories.NewWorkflowsRepository(s.mongoClient)
-	//guanabaraRepository := repositories.NewGuanabaraRepository(s.redis)
 	openaiRepository := repositories.NewOpenAiRepository()
 	openaiMongoRepository := repositories.NewOpenAiMongoRepository(s.mongoClient)
 	whatsappRepository := repositories.NewWhatsappRepository()
 	userPlanRepository := repositories.NewUserPlanRepository(s.mongoClient)
+	configsRepository := repositories.NewConfigRepository(s.mongoClient)
 
 	// Services
 	//workflowService := services.NewWorkflow(workflowRepository, metaRepository, customerRepository, sessionRepository, conversationsRepository, s.logger, openaiRepository, whatsappRepository)
@@ -55,6 +55,7 @@ func (s *Server) Start() error {
 	sessionService := services.NewSession(sessionRepository, s.logger)
 	openaiService := services.NewOpenAi(openaiRepository, openaiMongoRepository, s.logger)
 	reportsService := services.NewReports(metaRepository, customerRepository, sessionRepository, conversationsRepository, s.logger, openaiRepository, whatsappRepository)
+	configsService := services.NewConfigService(configsRepository)
 
 	//Controllers
 	metaController := controllers.NewMetaController(accountMetaService)
@@ -68,6 +69,7 @@ func (s *Server) Start() error {
 	openaiController := controllers.NewOpenAiController(openaiService)
 	reportsController := controllers.NewReportsController(reportsService)
 	userPlanController := controllers.NewUserPlanController(userPlanService)
+	configsController := controllers.NewConfigController(configsService)
 
 	//Start routes
 	routes.RegisterMetaRoutes(s.e, metaController)
@@ -81,6 +83,7 @@ func (s *Server) Start() error {
 	routes.RegisterOpenAiRoutes(s.e, openaiController)
 	routes.RegisterReportsRoutes(s.e, reportsController)
 	routes.RegisterUserPlanRoutes(s.e, userPlanController)
+	routes.RegisterConfigRoutes(s.e, configsController)
 
 	// Middlewares
 	s.e.Use(middleware.CORS())
@@ -90,9 +93,8 @@ func (s *Server) Start() error {
 	s.e.Use(middleware.Gzip())
 	s.e.Use(middleware.Secure())
 
-	// Inicia o servidor Echo diretamente na porta desejada
-	log.Println("Iniciando o servidor Echo na porta 8080...")
-	if err := s.e.Start(":8080"); err != nil {
+	log.Println("Iniciando o servidor Echo na porta 3333...")
+	if err := s.e.Start(":3333"); err != nil {
 		return err
 	}
 

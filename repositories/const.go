@@ -18,4 +18,6 @@ const (
 	openaiCollection = "assitants"
 
 	userPlanCollection = "user_plan"
+
+	configCollection = "config"
 )
