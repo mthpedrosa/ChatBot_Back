@@ -34,6 +34,7 @@ func NewWebhookController(messageHandler *services.MessageHandler, metaService *
 func (r *Webhook) WebhookRun(c echo.Context) error {
 	var payload models.WebhookPayload
 	fmt.Println("Start conversation process")
+	fmt.Println(c.Request())
 
 	// Extract the ID from the request
 	webhookId := c.Param("id")
@@ -47,9 +48,9 @@ func (r *Webhook) WebhookRun(c echo.Context) error {
 	}
 
 	// Ignore the status return because it is not currently used - will be used in messages
-	if len(payload.Entry) > 0 && len(payload.Entry[0].Changes) > 0 && len(payload.Entry[0].Changes[0].Value.Statuses) > 0 {
-		return nil
-	}
+	//if len(payload.Entry) > 0 && len(payload.Entry[0].Changes) > 0 && len(payload.Entry[0].Changes[0].Value.Statuses) > 0 {
+	//	return nil
+	//}
 
 	fmt.Print("ID Meta payload : " + payload.Entry[0].Changes[0].Value.MetaData.PhoneNumberId)
 
@@ -71,6 +72,8 @@ func (r *Webhook) WebhookRun(c echo.Context) error {
 		fmt.Println("Erro ao consultar usuario")
 		return nil
 	}
+
+	fmt.Println("USER PLAN:", userPlan)
 
 	if len(userPlan) == 0 {
 		fmt.Println("Usuário sem assinatura ou saldo de créditos")

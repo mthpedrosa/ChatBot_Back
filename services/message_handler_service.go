@@ -165,7 +165,7 @@ func (r *MessageHandler) Run(ctx context.Context, payload models.WebhookPayload,
 	flowData.Customer = customer
 	flowData.Session = session
 	flowData.Message = message
-	flowData.MetaTokens = metaTokens
+	flowData.MetaTokens = metaTokens // arrumar aqui, ta feio essa parte
 
 	// Allow the customer to return to the main menu in chatgpt
 	if message.Content == "v" || message.Content == "V" {
@@ -184,7 +184,7 @@ func (r *MessageHandler) Run(ctx context.Context, payload models.WebhookPayload,
 
 	// Identifies whether to proceed to the assistant
 	if step == "assistant" || step == "" {
-		fmt.Println("assistsant id :", assitantID)
+		fmt.Println("ASSISTANT ID :", assitantID)
 		//Send to gpt assistant
 		threadsIds, err := r.gpt_assistant(ctx, flowData, assitantID, idConversation)
 		if err != nil {
@@ -488,7 +488,7 @@ func (r *MessageHandler) gpt_assistant(ctx context.Context, flowData dto.FlowDat
 	}
 
 	if threadID == "" {
-		fmt.Println("Vamos criar a thread")
+		fmt.Println("CREATING A THREAD FOR THE USER")
 		thread, err := r.openaiRepository.CreateThread(flowData.Ctx)
 		if err != nil {
 			return threadsId, err

@@ -109,7 +109,6 @@ func (o *openaiClient) ConvertAudioToText(ctx context.Context, filePath string) 
 func OpenAIChatCompletion(text string) (string, error) {
 	url := "https://api.openai.com/v1/chat/completions"
 
-	// Corpo da requisição
 	requestBody := map[string]interface{}{
 		"model": "gpt-3.5-turbo",
 		"messages": []map[string]interface{}{
@@ -239,7 +238,7 @@ func GetChatGPTResponse(text string) (string, error) {
 func (o *openaiClient) CreateThread(ctx context.Context) (*models.ThreadResponse, error) {
 	res, err := o.httpClient.R().
 		SetContext(ctx).
-		SetHeader("OpenAI-Beta", "assistants=v1").
+		SetHeader("OpenAI-Beta", "assistants=v2").
 		SetBody(map[string]interface{}{}).
 		Post("/threads")
 
@@ -269,7 +268,7 @@ func (o *openaiClient) CreateThread(ctx context.Context) (*models.ThreadResponse
 func (o *openaiClient) PostMessage(ctx context.Context, threadID, message string) (string, error) {
 	res, err := o.httpClient.R().
 		SetContext(ctx).
-		SetHeader("OpenAI-Beta", "assistants=v1").
+		SetHeader("OpenAI-Beta", "assistants=v2").
 		SetBody(map[string]interface{}{
 			"role":    "user",
 			"content": message,
@@ -314,7 +313,7 @@ func (o *openaiClient) StartThreadRun(ctx context.Context, threadID, assistantID
 
 	res, err := o.httpClient.R().
 		SetContext(ctx).
-		SetHeader("OpenAI-Beta", "assistants=v1").
+		SetHeader("OpenAI-Beta", "assistants=v2").
 		SetBody(map[string]interface{}{
 			"assistant_id":            assistantID,
 			"additional_instructions": fmt.Sprintf("Hoje é dia: %d-%02d-%02d", currentYear, currentMonth, currentDay),
@@ -352,7 +351,7 @@ func (o *openaiClient) StartThreadRun(ctx context.Context, threadID, assistantID
 func (o *openaiClient) GetThreadRunStatus(ctx context.Context, threadID, runID string) (*models.ThreadRun, error) {
 	res, err := o.httpClient.R().
 		SetContext(ctx).
-		SetHeader("OpenAI-Beta", "assistants=v1").
+		SetHeader("OpenAI-Beta", "assistants=v2").
 		Get("/threads/" + threadID + "/runs/" + runID)
 
 	if err != nil {
@@ -381,7 +380,7 @@ func (o *openaiClient) GetThreadRunStatus(ctx context.Context, threadID, runID s
 func (o *openaiClient) GetThreadMessages(ctx context.Context, threadID string) ([]models.MessageThread, error) {
 	res, err := o.httpClient.R().
 		SetContext(ctx).
-		SetHeader("OpenAI-Beta", "assistants=v1").
+		SetHeader("OpenAI-Beta", "assistants=v2").
 		Get("/threads/" + threadID + "/messages")
 
 	if err != nil {
@@ -413,7 +412,7 @@ func (o *openaiClient) PostToolOutputs(ctx context.Context, threadID, runID, cal
 
 	res, err := o.httpClient.R().
 		SetContext(ctx).
-		SetHeader("OpenAI-Beta", "assistants=v1").
+		SetHeader("OpenAI-Beta", "assistants=v2").
 		SetBody(map[string]interface{}{
 			"tool_outputs": arrayRespone,
 		}).
@@ -441,7 +440,7 @@ func (o *openaiClient) CancelRun(ctx context.Context, threadID, runID string) (s
 	fmt.Println("Vamos cancelar um run")
 	res, err := o.httpClient.R().
 		SetContext(ctx).
-		SetHeader("OpenAI-Beta", "assistants=v1").
+		SetHeader("OpenAI-Beta", "assistants=v2").
 		Post("/threads/" + threadID + "/runs/" + runID + "/cancel")
 
 	if err != nil {
