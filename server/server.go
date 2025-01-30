@@ -93,8 +93,8 @@ func (s *Server) Start() error {
 	s.e.Use(middleware.Gzip())
 	s.e.Use(middleware.Secure())
 
-	log.Println("Iniciando o servidor Echo na porta 3333...")
-	if err := s.e.Start(":3333"); err != nil {
+	log.Println("Iniciando o servidor Echo na porta 8080...")
+	if err := s.e.Start(":8080"); err != nil {
 		return err
 	}
 
