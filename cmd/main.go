@@ -5,13 +5,12 @@ import (
 	"autflow_back/src/config"
 	"autflow_back/utils"
 	"context"
-	"log"
-
 	"github.com/labstack/echo/v4"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"log"
 )
 
 func main() {
