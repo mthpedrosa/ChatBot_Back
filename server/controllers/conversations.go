@@ -52,6 +52,7 @@ func (r *Conversation) Insert(c echo.Context) error {
 		Messages:    conversationRequest.Messages,
 		AssistantId: conversationRequest.AssistantId,
 		OtherFields: conversationRequest.OtherFields,
+		UserId:      conversationRequest.UserId,
 	}
 
 	createdID, erro := r.conversationService.Insert(c.Request().Context(), dt)
@@ -88,6 +89,7 @@ func (r *Conversation) Find(c echo.Context) error {
 			ID:          conversation.ID,
 			CustomerId:  conversation.CustomerId,
 			AssistantId: conversation.AssistantId,
+			UserId:      conversation.UserId,
 		}
 	}
 
@@ -115,6 +117,7 @@ func (r *Conversation) FindId(c echo.Context) error {
 		CreatedAt:   conversation.CreatedAt,
 		UpdateAt:    conversation.UpdateAt,
 		OtherFields: conversation.OtherFields,
+		UserId:      conversation.UserId,
 	}
 
 	return responses.JSON(c, http.StatusOK, conversationDTO)
@@ -154,6 +157,7 @@ func (r *Conversation) Edit(c echo.Context) error {
 		Messages:    conversationRequest.Messages,
 		AssistantId: conversationRequest.AssistantId,
 		OtherFields: conversationRequest.OtherFields,
+		UserId:      conversationRequest.UserId,
 	}
 
 	// Chamar a função para editar a conta

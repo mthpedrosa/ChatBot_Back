@@ -12,12 +12,14 @@ type ConversationCreateDTO struct {
 	Messages    []models.Message `json:"mensagens" bson:"mensagens,omitempty"`
 	AssistantId string           `json:"assistant_id" bson:"assistant_id"`
 	OtherFields []models.Fields  `json:"other_fields" bson:"other_fields"`
+	UserId      string           `json:"user_id" bson:"user_id"`
 }
 
 type ConversationListDTO struct {
 	ID          primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
 	CustomerId  string             `json:"customer_id" bson:"customer_id"`
 	AssistantId string             `json:"assistant_id" bson:"assistant_id"`
+	UserId      string             `json:"user_id" bson:"user_id"`
 }
 
 type ConversationDetailDTO struct {
@@ -28,6 +30,7 @@ type ConversationDetailDTO struct {
 	CreatedAt   time.Time          `json:"created_at" bson:"created_at"`
 	UpdateAt    time.Time          `json:"update_at" bson:"update_at"`
 	OtherFields []models.Fields    `json:"other_fields" bson:"other_fields"`
+	UserId      string             `json:"user_id" bson:"user_id"`
 }
 
 func (dto *ConversationCreateDTO) ToConversation() models.Conversation {

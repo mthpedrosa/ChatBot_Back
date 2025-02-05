@@ -20,4 +20,5 @@ type Conversation struct {
 	CreatedAt   time.Time          `json:"created_at" bson:"created_at"`
 	UpdateAt    time.Time          `json:"update_at" bson:"update_at"`
 	OtherFields []Fields           `json:"other_fields" bson:"other_fields"`
+	UserId      string             `json:"user_id" bson:"user_id"`
 }

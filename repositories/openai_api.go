@@ -110,7 +110,7 @@ func OpenAIChatCompletion(text string) (string, error) {
 	url := "https://api.openai.com/v1/chat/completions"
 
 	requestBody := map[string]interface{}{
-		"model": "gpt-3.5-turbo",
+		"model": "gpt-4o-mini",
 		"messages": []map[string]interface{}{
 			{"role": "user", "content": text},
 		},
@@ -175,7 +175,7 @@ func GetChatGPTResponse(text string) (string, error) {
 
 	// Corpo da requisição para o OpenAI
 	requestBody := map[string]interface{}{
-		"model": "gpt-3.5-turbo-1106",
+		"model": "gpt-4o-mini",
 		"response_format": map[string]string{
 			"type": "json_object",
 		},

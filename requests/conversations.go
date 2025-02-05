@@ -7,4 +7,5 @@ type ConversationRequest struct {
 	Messages    []models.Message `json:"mensagens" bson:"mensagens,omitempty"`
 	AssistantId string           `json:"assistant_id" bson:"assistant_id"`
 	OtherFields []models.Fields  `json:"other_fields" bson:"other_fields"`
+	UserId      string           `json:"user_id" bson:"user_id"`
 }

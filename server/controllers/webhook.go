@@ -80,7 +80,7 @@ func (r *Webhook) WebhookRun(c echo.Context) error {
 		return nil
 	}
 
-	err = r.messageHandler.Run(c.Request().Context(), models.WebhookPayload(payload), meta[0], idAssistant)
+	err = r.messageHandler.Run(c.Request().Context(), models.WebhookPayload(payload), meta[0], idAssistant, meta[0].UserID)
 	/*if err != nil {
 		return responses.Erro(c, http.StatusBadRequest, err)
 	}*/

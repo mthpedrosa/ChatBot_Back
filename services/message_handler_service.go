@@ -63,7 +63,7 @@ func (r *MessageHandler) ValidAssistant(ctx context.Context, payload models.Webh
 	return assistantId, nil
 }
 
-func (r *MessageHandler) Run(ctx context.Context, payload models.WebhookPayload, meta models.Meta, assitantID string) error {
+func (r *MessageHandler) Run(ctx context.Context, payload models.WebhookPayload, meta models.Meta, assitantID, userID string) error {
 	var session models.Session
 	var idConversation string
 
@@ -74,7 +74,7 @@ func (r *MessageHandler) Run(ctx context.Context, payload models.WebhookPayload,
 	}
 
 	if !customerExist {
-		session, idConversation, err = r.startConversationSession(ctx, idCustomer, assitantID)
+		session, idConversation, err = r.startConversationSession(ctx, idCustomer, assitantID, userID)
 		if err != nil {
 			return err
 		}
@@ -201,10 +201,11 @@ func (r *MessageHandler) Run(ctx context.Context, payload models.WebhookPayload,
 	return nil
 }
 
-func (r *MessageHandler) startConversationSession(ctx context.Context, idCustomer, idAssistant string) (models.Session, string, error) {
+func (r *MessageHandler) startConversationSession(ctx context.Context, idCustomer, idAssistant, userID string) (models.Session, string, error) {
 	var conversations models.Conversation
 	conversations.CustomerId = idCustomer
 	conversations.AssistantId = idAssistant
+	conversations.UserId = userID
 
 	idConversation, err := r.conversarionsRepository.Insert(ctx, conversations)
 	if err != nil {
