@@ -74,6 +74,8 @@ func (r *Webhook) WebhookRun(c echo.Context) error {
 	}
 
 	fmt.Println("USER PLAN:", userPlan)
+	fmt.Println("USER ASASSISTANT:", idAssistant)
+	fmt.Println("USER ID:", meta[0].UserID)
 
 	if len(userPlan) == 0 {
 		fmt.Println("Usuário sem assinatura ou saldo de créditos")
