@@ -50,8 +50,8 @@ func (r *MessageHandler) ValidAssistant(ctx context.Context, payload models.Webh
 	var assistantId string
 
 	for _, assistants := range meta.Assistants {
-		fmt.Println("Id assistant vinculado : " + assistants.OpenId)
-		if assistants.Active {
+		fmt.Println("Id assistant vinculado: " + assistants.OpenId)
+		if assistants.Active && assistants.OpenId != "" {
 			assistantId = assistants.Id
 		}
 	}
@@ -87,8 +87,8 @@ func (r *MessageHandler) Run(ctx context.Context, payload models.WebhookPayload,
 		}
 	}
 
-	fmt.Println("Current session ID:", session)
-	fmt.Println("Current conversation ID:", idConversation)
+	r.logger.Printf("Current session ID:", session)
+	r.logger.Printf("Current conversation ID:", idConversation)
 
 	// identify the type of message received and its content
 	message, err := r.identifyMessage(payload)
@@ -160,12 +160,13 @@ func (r *MessageHandler) Run(ctx context.Context, payload models.WebhookPayload,
 	fmt.Println(step)
 
 	// Data struct mount
-	var flowData dto.FlowData
-	flowData.Ctx = ctx
-	flowData.Customer = customer
-	flowData.Session = session
-	flowData.Message = message
-	flowData.MetaTokens = metaTokens // arrumar aqui, ta feio essa parte
+	var flowData = dto.FlowData{
+		Ctx:        ctx,
+		Customer:   customer,
+		Session:    session,
+		Message:    message,
+		MetaTokens: metaTokens,
+	}
 
 	// Allow the customer to return to the main menu in chatgpt
 	if message.Content == "v" || message.Content == "V" {
@@ -255,91 +256,6 @@ func (r *MessageHandler) customerExist(ctx context.Context, payload models.Webho
 
 	return false, models.Customer{}, "", errors.New("falha ao ler body da solicitação") // Request body reading error
 }
-
-// func (r *MessageHandler) getInfoSessions(ctx context.Context, idCustomer, idAssistant, userID string) (models.Session, string, error) {
-// 	var newSession models.Session
-// 	var idConversation string
-
-// 	// Query para encontrar sessões existentes
-// 	var query = fmt.Sprintf("customer_id=%s&assistant_id=%s", idCustomer, idAssistant)
-// 	sessions, err := r.sessionRepository.Find(ctx, query)
-// 	if err != nil {
-// 		return models.Session{}, "", err
-// 	}
-
-// 	// Verifica se há uma sessão em progresso
-// 	for _, session := range sessions {
-// 		if session.Status == "in_progress" {
-// 			newSession = session
-// 			idConversation = session.ConversationId
-// 			break
-// 		}
-// 	}
-
-// 	// Se nenhuma sessão em progresso foi encontrada, verifica o saldo e cria nova sessão, se possível
-// 	if newSession.ID.Hex() == "000000000000000000000000" || len(sessions) == 0 {
-// 		// Busca o plano de usuário
-// 		fmt.Println("Buscando o userPlan")
-// 		userPlan, err := r.userPlanRepository.Find(ctx, "user_id="+userID)
-// 		if err != nil {
-// 			return models.Session{}, "", fmt.Errorf("erro ao buscar o plano de usuário: %v", err)
-// 		}
-// 		if len(userPlan) == 0 {
-// 			fmt.Println("Usuario sem plano")
-// 			return models.Session{}, "", fmt.Errorf("usuário não possui plano")
-// 		}
-
-// 		// Verifica saldo para planos de assinatura ou de crédito
-// 		switch userPlan[0].PlanType {
-// 		case "subscription":
-
-// 			fmt.Println(userPlan[0])
-// 			if userPlan[0].Subscription.MessagesRemaining < 1 {
-// 				fmt.Println("saldo insuficiente de mensagens no plano de assinatura")
-// 				return models.Session{}, "", fmt.Errorf("saldo insuficiente de mensagens no plano de assinatura")
-// 			}
-// 			// Decrementa o saldo de mensagens
-// 			err = r.userPlanService.DecrementMessagesRemaining(ctx, userPlan[0].ID.String(), 1)
-// 			if err != nil {
-// 				return models.Session{}, "", fmt.Errorf("erro ao atualizar saldo de mensagens: %v", err)
-// 			}
-// 		case "credit":
-// 			if userPlan[0].Credit.Balance < userPlan[0].Credit.CostPerMessage {
-// 				return models.Session{}, "", fmt.Errorf("saldo insuficiente no plano de crédito")
-// 			}
-// 			// Decrementa o saldo de créditos
-// 			err = r.userPlanService.DecrementCreditBalance(ctx, userPlan[0].ID.Hex(), 1)
-// 			if err != nil {
-// 				return models.Session{}, "", fmt.Errorf("erro ao atualizar saldo de créditos: %v", err)
-// 			}
-// 		default:
-// 			return models.Session{}, "", fmt.Errorf("tipo de plano desconhecido")
-// 		}
-
-// 		// Criar nova conversa, se nenhuma estiver em progresso
-// 		conversation, err := r.conversarionsRepository.Find(ctx, "customer_id="+idCustomer)
-// 		if err != nil || len(conversation) == 0 {
-// 			return models.Session{}, "", fmt.Errorf("erro ao buscar ou criar conversa: %v", err)
-// 		}
-// 		idConversation = conversation[0].ID.Hex()
-
-// 		// Criação de nova sessão com status "in_progress"
-// 		newSession := models.Session{
-// 			ConversationId: idConversation,
-// 			CustomerID:     idCustomer,
-// 			AssistantId:    idAssistant,
-// 			Status:         "in_progress",
-// 		}
-// 		newSession, err = r.sessionRepository.Insert(ctx, newSession)
-// 		if err != nil {
-// 			return models.Session{}, "", fmt.Errorf("erro ao criar nova sessão: %v", err)
-// 		}
-
-// 		fmt.Println(newSession)
-// 	}
-
-// 	return newSession, idConversation, nil
-// }
 
 func (r *MessageHandler) getInfoSessions(ctx context.Context, idCustomer, idAssistant, userID string) (models.Session, string, error) {
 	var newSession models.Session
