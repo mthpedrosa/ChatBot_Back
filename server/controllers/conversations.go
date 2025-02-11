@@ -71,11 +71,6 @@ func (r *Conversation) Find(c echo.Context) error {
 		query = urlParts[1]
 	}
 
-	/*workflow := strings.ToLower(c.Request().URL.Query().Get("workflow"))
-	if workflow == "" {
-		return responses.Erro(c, http.StatusInternalServerError, errors.New("Parametro não encontrado"))
-	}*/
-
 	conversations, erro := r.conversationService.Find(c.Request().Context(), query)
 	if erro != nil {
 		return responses.Erro(c, http.StatusInternalServerError, erro)

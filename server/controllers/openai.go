@@ -68,6 +68,11 @@ func (o *OpenAi) Insert(c echo.Context) error {
 		return responses.Erro(c, http.StatusInternalServerError, erro)
 	}
 
+	_, err := o.openaiService.UpdateMeta(c.Request().Context(), createAssistantRequest.UserID)
+	if err != nil {
+		return responses.Erro(c, http.StatusInternalServerError, err)
+	}
+
 	return responses.JSON(c, http.StatusCreated, createdID)
 }
 func (o *OpenAi) Edit(c echo.Context) error {
@@ -112,6 +117,11 @@ func (o *OpenAi) Edit(c echo.Context) error {
 	retorno, erro := o.openaiService.Edit(c.Request().Context(), dt, ID)
 	if erro != nil {
 		return responses.Erro(c, http.StatusInternalServerError, erro)
+	}
+
+	_, err := o.openaiService.UpdateMeta(c.Request().Context(), createAssistantRequest.UserID)
+	if err != nil {
+		return responses.Erro(c, http.StatusInternalServerError, err)
 	}
 
 	return responses.JSON(c, http.StatusOK, "Assistant editado com sucesso: "+retorno)

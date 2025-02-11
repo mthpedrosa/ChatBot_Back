@@ -15,14 +15,16 @@ type OpenAi struct {
 	openaiRepository interfaces.OpenAIClientRepository
 	openaiMongo      *repositories.OpenaiMongo
 	logger           utils.Logger
+	metaRepository   *repositories.Metas
 }
 
 func NewOpenAi(openai interfaces.OpenAIClientRepository, openaiMongo *repositories.OpenaiMongo,
-	logger utils.Logger) *OpenAi {
+	logger utils.Logger, metaRepository *repositories.Metas) *OpenAi {
 	return &OpenAi{
 		logger:           logger,
 		openaiRepository: openai,
 		openaiMongo:      openaiMongo,
+		metaRepository:   metaRepository,
 	}
 }
 
@@ -198,4 +200,35 @@ func (o *OpenAi) FindAllUser(ctx context.Context, id string) ([]models.CreateAss
 	}
 
 	return assistants, nil
+}
+
+func (o *OpenAi) UpdateMeta(ctx context.Context, id string) (string, error) {
+	assistants, err := o.openaiMongo.FindAllUser(ctx, id)
+	if err != nil {
+		return "", err
+	}
+
+	contaMeta, err := o.metaRepository.Find(ctx, "user_id="+id)
+	if err != nil {
+		return "", err
+	}
+
+	newAssistantes := []models.AssistantIds{}
+	for _, assistant := range assistants {
+		newAssistantes = append(newAssistantes, models.AssistantIds{
+			OpenId: assistant.IdAssistant,
+			Id:     assistant.ID.Hex(),
+			Active: assistant.Active,
+		})
+	}
+
+	contaMeta[0].Assistants = newAssistantes
+
+	// Atualiza a conta meta com a nova lista de assistentes
+	err = o.metaRepository.Edit(ctx, contaMeta[0].ID.Hex(), contaMeta[0])
+	if err != nil {
+		return "", err
+	}
+
+	return "Conta meta atualizada com sucesso", nil
 }

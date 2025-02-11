@@ -23,7 +23,7 @@ func NewConversationsRepository(db *mongo.Client) *Conversations {
 	}
 }
 
-// Create inserts a new conversation into the database
+// Insert inserts a new conversation into the database
 func (c *Conversations) Insert(ctx context.Context, conversation models.Conversation) (string, error) {
 
 	collection := c.db.Collection(conversationsCollection)
@@ -39,7 +39,7 @@ func (c *Conversations) Insert(ctx context.Context, conversation models.Conversa
 	// id generated
 	insertedID, ok := result.InsertedID.(primitive.ObjectID)
 	if !ok {
-		return "", errors.New("falha ao obter o ID da conversa")
+		return "", errors.New("failed to get conversation ID")
 	}
 
 	return insertedID.Hex(), nil
@@ -57,7 +57,7 @@ func (c *Conversations) Edit(ctx context.Context, ID string, newConversation mod
 	// ID filter
 	filter := bson.M{"_id": objectID}
 
-	// Converts the novaConversa struct to a map to use in $set
+	// Converts the new Conversation struct to a map to use in $set
 	updateFields := bson.M{}
 	bsonBytes, err := bson.Marshal(newConversation)
 	if err != nil {
@@ -71,7 +71,7 @@ func (c *Conversations) Edit(ctx context.Context, ID string, newConversation mod
 	return err
 }
 
-// Search conversations by workflow id or customer id
+// Find conversations by workflow id or customer id
 func (c *Conversations) Find(ctx context.Context, query string) ([]models.Conversation, error) {
 	collection := c.db.Collection(conversationsCollection)
 
@@ -112,7 +112,7 @@ func (c *Conversations) Find(ctx context.Context, query string) ([]models.Conver
 	return conversations, nil
 }
 
-// Search id brings up a specific conversation by id
+// FindId brings up a specific conversation by id
 func (c *Conversations) FindId(ctx context.Context, ID string) (*models.Conversation, error) {
 	collection := c.db.Collection(conversationsCollection)
 
@@ -150,26 +150,26 @@ func (c *Conversations) Delete(ctx context.Context, ID string) error {
 	return err
 }
 
-// Insert messages into the 'messages' field
+// InsertMessage messages into the 'messages' field
 func (c *Conversations) InsertMessage(ctx context.Context, idConversa string, newMessage models.Message) error {
 	collection := c.db.Collection(conversationsCollection)
 
-	//set timestampo now
+	//set timestamp now
 	newMessage.Timestamp = time.Now().Unix()
 
-	// Converte a string para o object id do mongo
+	//convert a string para o object id do mongo
 	objectID, erro := primitive.ObjectIDFromHex(idConversa)
 	if erro != nil {
 		return erro
 	}
 
-	// Define the update operation to add the new message to the array of messages.
-	operacao := bson.M{
+	//Define the update operation to add the new message to the array of messages.
+	operation := bson.M{
 		"$push": bson.M{"mensagens": newMessage},
 	}
 
 	// update conversation document
-	_, err := collection.UpdateByID(ctx, objectID, operacao)
+	_, err := collection.UpdateByID(ctx, objectID, operation)
 	if err != nil {
 		return err
 	}

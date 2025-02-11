@@ -53,7 +53,7 @@ func (s *Server) Start() error {
 	userService := services.NewUser(userRepository, s.logger)
 	loginService := services.NewLogin(userRepository, s.logger)
 	sessionService := services.NewSession(sessionRepository, s.logger)
-	openaiService := services.NewOpenAi(openaiRepository, openaiMongoRepository, s.logger)
+	openaiService := services.NewOpenAi(openaiRepository, openaiMongoRepository, s.logger, metaRepository)
 	reportsService := services.NewReports(metaRepository, customerRepository, sessionRepository, conversationsRepository, s.logger, openaiRepository, whatsappRepository)
 	configsService := services.NewConfigService(configsRepository)
 
