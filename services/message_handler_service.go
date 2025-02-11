@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/goccy/go-json"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -391,6 +392,15 @@ func (r *MessageHandler) sendMenu(flowData dto.FlowData, arguments string) error
 	return nil
 }
 
+// Send contact for customer
+func (r *MessageHandler) sendContact(flowData dto.FlowData, name, phone string) error {
+	fmt.Println("Send contact")
+	fmt.Println(name, phone)
+
+	r.whatsappRepository.ContactMessage(flowData.Ctx, flowData.Customer, flowData.MetaTokens, name, phone)
+	return nil
+}
+
 func (r *MessageHandler) gpt_assistant(ctx context.Context, flowData dto.FlowData, asssitantID string, idConversation string) (models.ThreadIds, error) {
 	var status string
 	var callID string
@@ -459,84 +469,96 @@ func (r *MessageHandler) gpt_assistant(ctx context.Context, flowData dto.FlowDat
 		status = threadJson.Status
 		fmt.Println("Status:", status)
 
-		if status == "completed" || status == "cancelled" || status == "failed" || status == "requires_action" {
+		if status == "completed" || status == "cancelled" || status == "failed" {
 			fmt.Println("Status:", threadJson)
 			break
 		}
 
-		// if status == "requires_action" {
-		// 	var arrayRespone []models.CallResponse
+		if status == "requires_action" {
+			var arrayRespone []models.CallResponse
 
-		// 	for _, call := range threadJson.RequiredAction.SubmitToolOutputs.ToolCalls {
-		// 		var format models.CallResponse
-		// 		callID = call.ID
-		// 		fmt.Println("Numero da chamada : " + callID)
+			for _, call := range threadJson.RequiredAction.SubmitToolOutputs.ToolCalls {
+				var format models.CallResponse
+				callID = call.ID
+				fmt.Println("Numero da chamada : " + callID)
 
-		// 		switch call.Function.Name {
-		// 		case "get_schedules":
-		// 			//err = r.FlowSale(flowData, call.Function.Arguments)
-		// 			if err != nil {
-		// 				return err, models.ThreadIds{}
-		// 			}
+				switch call.Function.Name {
+				case "send_teacher_contact":
+					var result map[string]string
 
-		// 			format = models.CallResponse{
-		// 				ToolCallID: callID,
-		// 				OutPut:     `{success:"true"}`,
-		// 			}
+					err = json.Unmarshal([]byte(call.Function.Arguments), &result)
+					if err != nil {
+						format = models.CallResponse{
+							ToolCallID: callID,
+							OutPut:     `{success:"false"}`,
+						}
+					}
 
-		// 			arrayRespone = append(arrayRespone, format)
-		// 			ingoreReturn = true
-		// 		case "save_name":
-		// 			var result map[string]string
+					err = r.sendContact(flowData, result["teacher_name"], result["phone_number"])
+					if err != nil {
+						return models.ThreadIds{}, err
+					}
 
-		// 			err = json.Unmarshal([]byte(call.Function.Arguments), &result)
-		// 			if err != nil {
-		// 				format = models.CallResponse{
-		// 					ToolCallID: callID,
-		// 					OutPut:     `{success:"false"}`,
-		// 				}
-		// 			}
+					format = models.CallResponse{
+						ToolCallID: callID,
+						OutPut:     `{success:"true"}`,
+					}
 
-		// 			var field models.Fields
-		// 			field.Name = "name_provided"
-		// 			field.Type = "string"
-		// 			field.Value = result["first_name"] + " " + result["last_name"]
-		// 			err = r.customerRepository.UpdateCustomerField(flowData.Ctx, flowData.Session.CustomerID, field)
+					arrayRespone = append(arrayRespone, format)
+					ingoreReturn = true
 
-		// 			format = models.CallResponse{
-		// 				ToolCallID: callID,
-		// 				OutPut:     `{success:"true"}`,
-		// 			}
+					break
+				//case "save_name":
+				//	var result map[string]string
+				//
+				//	err = json.Unmarshal([]byte(call.Function.Arguments), &result)
+				//	if err != nil {
+				//		format = models.CallResponse{
+				//			ToolCallID: callID,
+				//			OutPut:     `{success:"false"}`,
+				//		}
+				//	}
+				//
+				//	var field models.Fields
+				//	field.Name = "name_provided"
+				//	field.Type = "string"
+				//	field.Value = result["first_name"] + " " + result["last_name"]
+				//	err = r.customerRepository.UpdateCustomerField(flowData.Ctx, flowData.Session.CustomerID, field)
+				//
+				//	format = models.CallResponse{
+				//		ToolCallID: callID,
+				//		OutPut:     `{success:"true"}`,
+				//	}
+				//
+				//	arrayRespone = append(arrayRespone, format)
+				//
+				//	break
 
-		// 			arrayRespone = append(arrayRespone, format)
+				//case "send_menu":
+				//	err = r.SendMenu(flowData, call.Function.Arguments)
+				//	if err != nil {
+				//		return err, models.ThreadIds{}
+				//	}
+				//
+				//	format = models.CallResponse{
+				//		ToolCallID: callID,
+				//		OutPut:     `{success:"true"}`,
+				//	}
+				//
+				//	arrayRespone = append(arrayRespone, format)
+				//	ingoreReturn = true
+				default:
+					return threadsId, fmt.Errorf("Função nao encontrada")
+				}
+			}
 
-		// 			break
-
-		// 		case "send_menu":
-		// 			err = r.SendMenu(flowData, call.Function.Arguments)
-		// 			if err != nil {
-		// 				return err, models.ThreadIds{}
-		// 			}
-
-		// 			format = models.CallResponse{
-		// 				ToolCallID: callID,
-		// 				OutPut:     `{success:"true"}`,
-		// 			}
-
-		// 			arrayRespone = append(arrayRespone, format)
-		// 			ingoreReturn = true
-		// 		default:
-		// 			return fmt.Errorf("Função nao encontrada"), threadsId
-		// 		}
-		// 	}
-
-		// 	if len(arrayRespone) > 0 {
-		// 		_, err = r.openaiRepository.PostToolOutputs(flowData.Ctx, threadID, runID, callID, arrayRespone)
-		// 		if err != nil {
-		// 			return err, threadsId
-		// 		}
-		// 	}
-		// }
+			if len(arrayRespone) > 0 {
+				_, err = r.openaiRepository.PostToolOutputs(flowData.Ctx, threadID, runID, callID, arrayRespone)
+				if err != nil {
+					return threadsId, err
+				}
+			}
+		}
 		fmt.Println(callID)
 		time.Sleep(100 * time.Millisecond)
 	}

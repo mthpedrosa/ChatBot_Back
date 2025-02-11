@@ -110,7 +110,7 @@ func OpenAIChatCompletion(text string) (string, error) {
 	url := "https://api.openai.com/v1/chat/completions"
 
 	requestBody := map[string]interface{}{
-		"model": "gpt-4o-mini",
+		"model": "gpt-3.5-turbo-16k",
 		"messages": []map[string]interface{}{
 			{"role": "user", "content": text},
 		},
@@ -175,7 +175,7 @@ func GetChatGPTResponse(text string) (string, error) {
 
 	// Corpo da requisição para o OpenAI
 	requestBody := map[string]interface{}{
-		"model": "gpt-4o-mini",
+		"model": "gpt-3.5-turbo-16k",
 		"response_format": map[string]string{
 			"type": "json_object",
 		},
@@ -464,11 +464,40 @@ func (o *openaiClient) CancelRun(ctx context.Context, threadID, runID string) (s
 
 // CreateAssistant sends a POST request to the OpenAI API to create a new assistant.
 func (o *openaiClient) CreateAssistant(ctx context.Context, dto models.CreateAssistant, model string) (*models.Assistant, error) {
+	// Monta o payload com a função fixa "send_teacher_contact" dentro do tool do tipo "function"
 	body := map[string]interface{}{
 		"instructions": dto.Instructions,
 		"name":         dto.Name,
-		"tools": []map[string]string{
-			{"type": "code_interpreter"},
+		"tools": []interface{}{
+			map[string]interface{}{
+				"type": "code_interpreter",
+			},
+			map[string]interface{}{
+				"type": "function",
+				"function": map[string]interface{}{
+					"name":        "send_teacher_contact",
+					"description": "A função para enviar o número de telefone e nome do professor do assunto que o aluno quer",
+					"strict":      true,
+					"parameters": map[string]interface{}{
+						"type": "object",
+						"required": []string{
+							"teacher_name",
+							"phone_number",
+						},
+						"properties": map[string]interface{}{
+							"teacher_name": map[string]interface{}{
+								"type":        "string",
+								"description": "Nome do professor",
+							},
+							"phone_number": map[string]interface{}{
+								"type":        "string",
+								"description": "Número de telefone do professor",
+							},
+						},
+						"additionalProperties": false,
+					},
+				},
+			},
 		},
 		"model": model,
 	}
@@ -487,9 +516,8 @@ func (o *openaiClient) CreateAssistant(ctx context.Context, dto models.CreateAss
 		return nil, fmt.Errorf("error in response: %v", res.Error())
 	}
 
-	// Check the response status
 	if res.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("unexpected response status: %s", res.Status())
+		return nil, fmt.Errorf("unexpected response status: %s, body: %s", res.Status(), res.Body())
 	}
 
 	var assistant models.Assistant

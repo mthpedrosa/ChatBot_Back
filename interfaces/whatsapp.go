@@ -12,5 +12,5 @@ type WhatsappRepository interface {
 	GetUrlMedia(ctx context.Context, mediaID string) (string, error)
 	DownloadMedia(ctx context.Context, url, name string) (string, error)
 	InteractiveMessageList(ctx context.Context, customer models.Customer, meta models.MetaIds, bodyText string, rows []models.Row) error
-	ContactMessage(ctx context.Context, customer models.Customer, meta models.MetaIds) error
+	ContactMessage(ctx context.Context, customer models.Customer, meta models.MetaIds, name, phone string) error
 }
