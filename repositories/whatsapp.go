@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/spf13/viper"
@@ -339,6 +340,7 @@ func (w *whatsappClient) ContactMessage(ctx context.Context, customer models.Cus
 				{
 					"name": map[string]interface{}{
 						"formatted_name": name,
+						"first_name":     strings.Split(name, " ")[0],
 					},
 					"phones": []map[string]interface{}{
 						{
