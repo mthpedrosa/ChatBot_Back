@@ -66,6 +66,8 @@ func (o *OpenAi) Insert(ctx context.Context, dt *dto.AssistantCreateDTO, userID 
 	// Caso contrário, cria no OpenAI primeiro
 	fmt.Printf("Creating assistant in OpenAI")
 
+	assistant.Instructions += assistant.Info
+
 	//Verificamos se existe subs vinculado
 	if len(dt.Subs) > 0 {
 		for i, sub := range dt.Subs {
@@ -75,7 +77,7 @@ func (o *OpenAi) Insert(ctx context.Context, dt *dto.AssistantCreateDTO, userID 
 				return "", error
 			}
 
-			assistant.Instructions += subGet.Instructions
+			assistant.Instructions += " topicos: " + subGet.Instructions + "info" + subGet.Info
 		}
 	}
 
@@ -84,11 +86,9 @@ func (o *OpenAi) Insert(ctx context.Context, dt *dto.AssistantCreateDTO, userID 
 		return "", err
 	}
 
-	// Atualiza o DTO com o ID retornado do OpenAI
-	assistant.IdAssistant = idCriado.ID // Atribui o ID retornado pelo OpenAI
-	assistant.UserID = userID           // Atribui o ID do usuário ao DTO
+	assistant.IdAssistant = idCriado.ID
+	assistant.UserID = userID
 
-	// Insere no MongoDB o assistente completo
 	idMongo, err := o.openaiMongo.Insert(ctx, assistant)
 	if err != nil {
 		return "", err

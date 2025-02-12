@@ -10,4 +10,5 @@ type CreateAssistantRequest struct {
 	Type         string        `json:"type" bson:"type"`
 	Subs         []models.Subs `json:"subs,omitempty" bson:"subs,omitempty"`
 	Active       bool          `json:"active" bson:"active"`
+	Info         string        `json:"info,omitempty" bson:"info,omitempty"`
 }

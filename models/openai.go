@@ -189,6 +189,7 @@ type CreateAssistant struct {
 	Active       bool               `json:"active" bson:"active"`
 	CreatedAt    time.Time          `json:"created_at" bson:"created_at"`
 	UpdateAt     time.Time          `json:"update_at" bson:"update_at"`
+	Info         string             `json:"info" bson:"info"`
 }
 
 type Subs struct {
