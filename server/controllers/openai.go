@@ -60,6 +60,7 @@ func (o *OpenAi) Insert(c echo.Context) error {
 		Type:         createAssistantRequest.Type,
 		Subs:         createAssistantRequest.Subs,
 		Active:       createAssistantRequest.Active,
+		Info:         createAssistantRequest.Info,
 	}
 
 	// Call the service with the Meta

@@ -126,6 +126,7 @@ func (o *OpenAi) Edit(ctx context.Context, dt *dto.AssistantCreateDTO, id string
 	// Verifica se o assistente é do tipo "ass"
 	if newAssistante.Type == "ass" {
 		fmt.Printf("Updating assistant in OpenAI")
+		newAssistante.Instructions += newAssistante.Info
 
 		// Verifica se existem subs vinculados
 		if len(dt.Subs) > 0 {
@@ -136,7 +137,7 @@ func (o *OpenAi) Edit(ctx context.Context, dt *dto.AssistantCreateDTO, id string
 					return "", err
 				}
 
-				newAssistante.Instructions += " ---- " + subGet.Instructions
+				newAssistante.Instructions += "topicos: " + subGet.Instructions + "info" + subGet.Info
 			}
 		}
 
