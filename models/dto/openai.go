@@ -48,5 +48,6 @@ func (dto *AssistantCreateDTO) ToAssistant() models.CreateAssistant {
 		Subs:         dto.Subs,
 		Active:       dto.Active,
 		Type:         dto.Type,
+		Info:         dto.Info,
 	}
 }
