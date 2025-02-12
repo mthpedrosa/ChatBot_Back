@@ -66,6 +66,7 @@ func (o *OpenAi) Insert(ctx context.Context, dt *dto.AssistantCreateDTO, userID 
 	// Caso contrário, cria no OpenAI primeiro
 	fmt.Printf("Creating assistant in OpenAI")
 
+	oldInstructions := assistant.Instructions
 	assistant.Instructions += assistant.Info
 
 	//Verificamos se existe subs vinculado
@@ -88,6 +89,7 @@ func (o *OpenAi) Insert(ctx context.Context, dt *dto.AssistantCreateDTO, userID 
 
 	assistant.IdAssistant = idCriado.ID
 	assistant.UserID = userID
+	assistant.Instructions = oldInstructions
 
 	idMongo, err := o.openaiMongo.Insert(ctx, assistant)
 	if err != nil {
