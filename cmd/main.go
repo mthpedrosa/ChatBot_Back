@@ -17,18 +17,7 @@ func main() {
 
 	config.Load()
 
-	// Carregar as variáveis do arquivo .env
-	// envFile := ".env"
-	// if os.Getenv("ENV") == "local" {
-	// 	envFile = ".env.local"
-	// }
-
-	// err := godotenv.Load(envFile)
-	// if err != nil {
-	// 	log.Fatalf("Error loading %s file: %v", envFile, err)
-	// }
-
-	// Configura o Viper para carregar variáveis do ambiente
+	// Configure Viper to load environment variables
 	viper.AutomaticEnv()
 
 	log.Println("Starting microservice")
@@ -60,19 +49,19 @@ func main() {
 	logger.Info("Connected to MongoDB!")
 
 	// Redis
-	/*redisClient := adapters.CreateRedisClient(ctx, adapters.RedisConfig{
-		DB:  0,
-		URL: viper.GetString("REDIS_URL"),
-	})
-	if redisClient == nil {
-		logger.Panicf("Error creating redis client: %s", err)
-	}
+	//redisClient := adapters.CreateRedisClient(ctx, adapters.RedisConfig{
+	//	DB:  0,
+	//	URL: viper.GetString("REDIS_URL"),
+	//})
+	//if redisClient == nil {
+	//	logger.Panicf("Error creating redis client: %s", err)
+	//}
+	//
+	//if err := redisClient.Ping(ctx).Err(); err != nil {
+	//	logger.Panicf("Error pinging redis client: %s", err)
+	//}
 
-	if err := redisClient.Ping(ctx).Err(); err != nil {
-		logger.Panicf("Error pinging redis client: %s", err)
-	}
-
-	logger.Info("Connected to Redis!")*/
+	logger.Info("Connected to Redis!")
 
 	// echo
 	e := echo.New()

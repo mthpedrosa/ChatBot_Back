@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"autflow_back/models"
+	"autflow_back/requests"
 	"autflow_back/services"
 	"autflow_back/src/responses"
 	"encoding/json"
@@ -103,4 +104,48 @@ func (r *Webhook) WebhookCheck(c echo.Context) error {
 		fmt.Println("Token de verificação não encontrado")
 		return responses.Erro(c, http.StatusBadRequest, errors.New("Parâmetro hub.verify_token não encontrado na query"))
 	}
+}
+
+func (r *Webhook) SendMessage(c echo.Context) error {
+	messageRequest := new(requests.SendMessageRequest)
+
+	if err := c.Bind(messageRequest); err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"message": err.Error(),
+		})
+	}
+
+	// Check account_meta
+	meta, erro := r.metaService.Find(c.Request().Context(), "user_id="+messageRequest.PhoneMetaId)
+	if erro != nil {
+		return responses.Erro(c, http.StatusInternalServerError, erro)
+	}
+
+	// Valida a existência de créditos ou assinatura
+	userPlan, err := r.userPlan.Find(c.Request().Context(), "user_id="+meta[0].UserID)
+	if err != nil {
+		fmt.Println("Erro ao consultar usuario")
+		return nil
+	}
+
+	metaTokens := models.MetaIds{
+		PhoneID:    meta[0].PhoneNumberId,
+		BusinessId: meta[0].BusinessId,
+	}
+
+	fmt.Println("USER PLAN:", userPlan)
+	fmt.Println("USER ID:", meta[0].UserID)
+
+	if len(userPlan) == 0 {
+		fmt.Println("Usuário sem assinatura ou saldo de créditos")
+		return nil
+	}
+
+	err = r.messageHandler.SendMessage(c.Request().Context(), messageRequest.CustomerId, messageRequest.Message, messageRequest.ConversationID, metaTokens)
+	if err != nil {
+		return responses.Erro(c, http.StatusBadRequest, err)
+	}
+
+	return nil
+
 }

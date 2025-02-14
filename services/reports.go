@@ -50,7 +50,7 @@ func (o *Reports) Cost(ctx context.Context, dt *requests.CostParams) ([]map[stri
 	fmt.Print("PASSA DATA de service")
 
 	// Consultamos a conta meta  do id mandado
-	meta, err := o.metaRepository.FindId(ctx, dt.MetaId)
+	meta, err := o.metaRepository.Find(ctx, "user_id="+dt.MetaId)
 	if err != nil {
 		return nil, err
 	}
@@ -59,11 +59,11 @@ func (o *Reports) Cost(ctx context.Context, dt *requests.CostParams) ([]map[stri
 	assistantsReport := []map[string]interface{}{}
 
 	// Itera sobre os assistentes vinculados à conta Meta
-	for _, assistant := range meta.Assistants {
+	for _, assistant := range meta[0].Assistants {
 		fmt.Printf("Consultando custo do assistente: %v\n", assistant)
 
 		// Chamar o método `FindCost` do repositório de sessões
-		sessions, err := o.sessionRepository.FindCost(ctx, startDate, endDate, assistant.Id)
+		sessions, err := o.sessionRepository.FindCost(ctx, startDate, endDate, assistant.OpenId)
 		if err != nil {
 			return nil, fmt.Errorf("erro ao consultar sessões: %v", err)
 		}
@@ -84,7 +84,7 @@ func (o *Reports) Cost(ctx context.Context, dt *requests.CostParams) ([]map[stri
 
 		// Cria um objeto com o resumo das informações para o assistente
 		assistantReport := map[string]interface{}{
-			"assistant_id":   assistant.Id,
+			"assistant_id":   assistant.OpenId,
 			"sessions_count": len(sessions),
 			"messages_count": totalMessages,
 			"total_cost":     totalCost,

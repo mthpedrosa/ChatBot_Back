@@ -2,6 +2,7 @@ package adapters
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"
 )
@@ -33,4 +34,18 @@ func CreateRedisClient(ctx context.Context, redisConfig RedisConfig) *redis.Clie
 	}
 
 	return rdb
+}
+
+// Serialize converte um objeto em uma string JSON.
+func Serialize(data interface{}) (string, error) {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return "", err
+	}
+	return string(jsonData), nil
+}
+
+// Deserialize converte uma string JSON para o objeto indicado.
+func Deserialize(dataStr string, target interface{}) error {
+	return json.Unmarshal([]byte(dataStr), target)
 }

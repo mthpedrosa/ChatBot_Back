@@ -472,32 +472,6 @@ func (o *openaiClient) CreateAssistant(ctx context.Context, dto models.CreateAss
 			map[string]interface{}{
 				"type": "code_interpreter",
 			},
-			map[string]interface{}{
-				"type": "function",
-				"function": map[string]interface{}{
-					"name":        "send_teacher_contact",
-					"description": "A função para enviar o número de telefone e nome do professor do assunto que o aluno quer",
-					"strict":      true,
-					"parameters": map[string]interface{}{
-						"type": "object",
-						"required": []string{
-							"teacher_name",
-							"phone_number",
-						},
-						"properties": map[string]interface{}{
-							"teacher_name": map[string]interface{}{
-								"type":        "string",
-								"description": "Nome do professor",
-							},
-							"phone_number": map[string]interface{}{
-								"type":        "string",
-								"description": "Número de telefone do professor",
-							},
-						},
-						"additionalProperties": false,
-					},
-				},
-			},
 		},
 		"model": model,
 	}

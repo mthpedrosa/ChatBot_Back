@@ -9,7 +9,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/goccy/go-json"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -415,14 +414,14 @@ func (r *MessageHandler) gpt_assistant(ctx context.Context, flowData dto.FlowDat
 	}
 
 	if threadID == "" {
-		fmt.Println("CREATING A THREAD FOR THE USER")
+		r.logger.Printf("CREATING A THREAD FOR THE USER")
+
 		thread, err := r.openaiRepository.CreateThread(flowData.Ctx)
 		if err != nil {
 			return threadsId, err
 		}
 
-		fmt.Println("Thread Criada :")
-		fmt.Print(thread)
+		r.logger.Info("THREAD: ", thread.ID)
 		threadID = thread.ID
 
 		var field models.Fields
@@ -430,8 +429,7 @@ func (r *MessageHandler) gpt_assistant(ctx context.Context, flowData dto.FlowDat
 		field.Type = "string"
 		field.Value = threadID
 
-		fmt.Println("Campo a ser criado/atualizado: " + field.Name)
-		fmt.Println("valor a ser criado/atualizado: " + field.Value)
+		r.logger.Printf("Campo a ser criado/atualizado: %s , value : %s", field.Name, field.Value)
 
 		err = r.customerRepository.UpdateCustomerField(flowData.Ctx, flowData.Session.CustomerID, field)
 		if err != nil {
@@ -444,14 +442,14 @@ func (r *MessageHandler) gpt_assistant(ctx context.Context, flowData dto.FlowDat
 	if err != nil {
 		return threadsId, err
 	}
-	fmt.Println("Id da mensagem adicionada: " + messageID)
+	r.logger.Printf("MESSAGE ID: %s ", messageID)
 
 	// Start the thread
 	runID, err := r.openaiRepository.StartThreadRun(flowData.Ctx, threadID, asssitantID)
 	if err != nil {
 		return threadsId, err
 	}
-	fmt.Println("Id do run: " + runID)
+	r.logger.Printf("RUN ID: %s", runID)
 
 	//Define the struc to return on error
 	threadsId.ThreadId = threadID
@@ -460,105 +458,105 @@ func (r *MessageHandler) gpt_assistant(ctx context.Context, flowData dto.FlowDat
 
 	// Query thread run status
 	for {
-		fmt.Println("No for")
+		r.logger.Printf("No for")
 		threadJson, err := r.openaiRepository.GetThreadRunStatus(flowData.Ctx, threadID, runID)
 		if err != nil {
 			return threadsId, err
 		}
 
 		status = threadJson.Status
-		fmt.Println("Status:", status)
+		r.logger.Printf("Status:", status)
 
-		if status == "completed" || status == "cancelled" || status == "failed" {
+		if status == "completed" || status == "cancelled" || status == "failed" || status == "requires_action" {
 			fmt.Println("Status:", threadJson)
 			break
 		}
 
-		if status == "requires_action" {
-			var arrayRespone []models.CallResponse
-
-			for _, call := range threadJson.RequiredAction.SubmitToolOutputs.ToolCalls {
-				var format models.CallResponse
-				callID = call.ID
-				fmt.Println("Numero da chamada : " + callID)
-
-				switch call.Function.Name {
-				case "send_teacher_contact":
-					var result map[string]string
-
-					err = json.Unmarshal([]byte(call.Function.Arguments), &result)
-					if err != nil {
-						format = models.CallResponse{
-							ToolCallID: callID,
-							OutPut:     `{success:"false"}`,
-						}
-					}
-
-					err = r.sendContact(flowData, result["teacher_name"], result["phone_number"])
-					if err != nil {
-						return models.ThreadIds{}, err
-					}
-
-					format = models.CallResponse{
-						ToolCallID: callID,
-						OutPut:     `{success:"true"}`,
-					}
-
-					arrayRespone = append(arrayRespone, format)
-					ingoreReturn = true
-
-					break
-				//case "save_name":
-				//	var result map[string]string
-				//
-				//	err = json.Unmarshal([]byte(call.Function.Arguments), &result)
-				//	if err != nil {
-				//		format = models.CallResponse{
-				//			ToolCallID: callID,
-				//			OutPut:     `{success:"false"}`,
-				//		}
-				//	}
-				//
-				//	var field models.Fields
-				//	field.Name = "name_provided"
-				//	field.Type = "string"
-				//	field.Value = result["first_name"] + " " + result["last_name"]
-				//	err = r.customerRepository.UpdateCustomerField(flowData.Ctx, flowData.Session.CustomerID, field)
-				//
-				//	format = models.CallResponse{
-				//		ToolCallID: callID,
-				//		OutPut:     `{success:"true"}`,
-				//	}
-				//
-				//	arrayRespone = append(arrayRespone, format)
-				//
-				//	break
-
-				//case "send_menu":
-				//	err = r.SendMenu(flowData, call.Function.Arguments)
-				//	if err != nil {
-				//		return err, models.ThreadIds{}
-				//	}
-				//
-				//	format = models.CallResponse{
-				//		ToolCallID: callID,
-				//		OutPut:     `{success:"true"}`,
-				//	}
-				//
-				//	arrayRespone = append(arrayRespone, format)
-				//	ingoreReturn = true
-				default:
-					return threadsId, fmt.Errorf("Função nao encontrada")
-				}
-			}
-
-			if len(arrayRespone) > 0 {
-				_, err = r.openaiRepository.PostToolOutputs(flowData.Ctx, threadID, runID, callID, arrayRespone)
-				if err != nil {
-					return threadsId, err
-				}
-			}
-		}
+		//if status == "requires_action" {
+		//	var arrayRespone []models.CallResponse
+		//
+		//	for _, call := range threadJson.RequiredAction.SubmitToolOutputs.ToolCalls {
+		//		var format models.CallResponse
+		//		callID = call.ID
+		//		fmt.Println("Numero da chamada : " + callID)
+		//
+		//		switch call.Function.Name {
+		//		case "send_teacher_contact":
+		//			var result map[string]string
+		//
+		//			err = json.Unmarshal([]byte(call.Function.Arguments), &result)
+		//			if err != nil {
+		//				format = models.CallResponse{
+		//					ToolCallID: callID,
+		//					OutPut:     `{success:"false"}`,
+		//				}
+		//			}
+		//
+		//			err = r.sendContact(flowData, result["teacher_name"], result["phone_number"])
+		//			if err != nil {
+		//				return models.ThreadIds{}, err
+		//			}
+		//
+		//			format = models.CallResponse{
+		//				ToolCallID: callID,
+		//				OutPut:     `{success:"true"}`,
+		//			}
+		//
+		//			arrayRespone = append(arrayRespone, format)
+		//			ingoreReturn = true
+		//
+		//			break
+		//		//case "save_name":
+		//		//	var result map[string]string
+		//		//
+		//		//	err = json.Unmarshal([]byte(call.Function.Arguments), &result)
+		//		//	if err != nil {
+		//		//		format = models.CallResponse{
+		//		//			ToolCallID: callID,
+		//		//			OutPut:     `{success:"false"}`,
+		//		//		}
+		//		//	}
+		//		//
+		//		//	var field models.Fields
+		//		//	field.Name = "name_provided"
+		//		//	field.Type = "string"
+		//		//	field.Value = result["first_name"] + " " + result["last_name"]
+		//		//	err = r.customerRepository.UpdateCustomerField(flowData.Ctx, flowData.Session.CustomerID, field)
+		//		//
+		//		//	format = models.CallResponse{
+		//		//		ToolCallID: callID,
+		//		//		OutPut:     `{success:"true"}`,
+		//		//	}
+		//		//
+		//		//	arrayRespone = append(arrayRespone, format)
+		//		//
+		//		//	break
+		//
+		//		//case "send_menu":
+		//		//	err = r.SendMenu(flowData, call.Function.Arguments)
+		//		//	if err != nil {
+		//		//		return err, models.ThreadIds{}
+		//		//	}
+		//		//
+		//		//	format = models.CallResponse{
+		//		//		ToolCallID: callID,
+		//		//		OutPut:     `{success:"true"}`,
+		//		//	}
+		//		//
+		//		//	arrayRespone = append(arrayRespone, format)
+		//		//	ingoreReturn = true
+		//		default:
+		//			return threadsId, fmt.Errorf("Função nao encontrada")
+		//		}
+		//	}
+		//
+		//	if len(arrayRespone) > 0 {
+		//		_, err = r.openaiRepository.PostToolOutputs(flowData.Ctx, threadID, runID, callID, arrayRespone)
+		//		if err != nil {
+		//			return threadsId, err
+		//		}
+		//	}
+		//}
 		fmt.Println(callID)
 		time.Sleep(100 * time.Millisecond)
 	}
@@ -601,4 +599,34 @@ func (r *MessageHandler) gpt_assistant(ctx context.Context, flowData dto.FlowDat
 	}
 
 	return models.ThreadIds{}, nil
+}
+
+func (r *MessageHandler) SendMessage(ctx context.Context, customerID, message, idConversation string, ids models.MetaIds) error {
+
+	customer, err := r.customerRepository.FindId(ctx, customerID, false)
+	if err != nil {
+		return err
+	}
+
+	err = r.whatsappRepository.SimpleMessage(ctx, message, *customer, ids)
+	if err != nil {
+		return err
+	}
+
+	var conv models.Message = models.Message{
+		Content: message,
+		Status: models.MessageStatus{
+			Sent:     true,
+			Received: false,
+		},
+		Sender:    "gpt",
+		Timestamp: time.Now().Unix(),
+	}
+
+	err = r.conversarionsRepository.InsertMessage(ctx, idConversation, conv)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

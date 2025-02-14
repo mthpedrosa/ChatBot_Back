@@ -9,4 +9,5 @@ import (
 func RegisterWebhookRoutes(e *echo.Echo, webhookController *controllers.Webhook) {
 	e.POST("/webhook/:id", webhookController.WebhookRun)
 	e.GET("/webhook/:id", webhookController.WebhookCheck)
+	e.POST("/send-message", webhookController.SendMessage)
 }

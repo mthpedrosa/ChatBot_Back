@@ -11,3 +11,10 @@ type CreateWorkflowRequest struct {
 	FirstNode   string        `json:"first_node" bson:"first_node"`
 	LastNode    string        `json:"last_node" bson:"last_node"`
 }
+
+type SendMessageRequest struct {
+	PhoneMetaId    string `json:"phone_meta_id" bson:"phone_meta_id"`
+	CustomerId     string `json:"customer_id" bson:"customer_id"`
+	Message        string `json:"message" bson:"message"`
+	ConversationID string `json:"conversation_id" bson:"conversation_id"`
+}
